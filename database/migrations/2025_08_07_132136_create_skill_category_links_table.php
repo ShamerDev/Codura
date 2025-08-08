@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('skill_category_link', function (Blueprint $table) {
+        Schema::create('skill_category_links', function (Blueprint $table) {
             $table->id();
             $table->foreignId('skill_id')->constrained()->onDelete('cascade');
             $table->foreignId('skill_category_id')->constrained()->onDelete('cascade');
