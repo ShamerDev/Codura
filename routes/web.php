@@ -16,4 +16,12 @@ Route::view('main/test', 'test')
     ->middleware(['auth'])
     ->name('test');
 
+Route::view('user/addentry', 'user.addentry')
+    ->middleware(['auth'])
+    ->name('user.addentry');
+
+Route::view('user/viewentry', 'user.viewentry')
+    ->middleware(['auth'])
+    ->name('user.viewentry');
+
 require __DIR__.'/auth.php';

@@ -4,6 +4,7 @@ use WireUi\Components;
 use WireUi\Enum\Packs;
 use WireUi\WireUiConfig as Config;
 
+
 return [
 
     /*
@@ -129,6 +130,10 @@ return [
         'modal' => [
             'class' => Components\Modal\Index::class,
             'alias' => 'wui-modal',
+        ],
+        'dialog' => [
+            'class' => Components\Dialog\Index::class,
+            'alias' => 'wui-dialog',
         ],
     ]),
 ];
