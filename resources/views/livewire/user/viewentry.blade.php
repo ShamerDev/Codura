@@ -183,7 +183,7 @@ new class extends Component {
                         innovative solutions.
                     </p>
 
-                    <a href="#"
+                    <a href="{{ route('user.addentry') }}"
                         class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all shadow-xl hover:shadow-2xl transform hover:scale-105">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
