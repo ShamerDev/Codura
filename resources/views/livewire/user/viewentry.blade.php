@@ -8,10 +8,13 @@ new class extends Component {
 
     public function mount()
     {
-        // Fetch all entries
-        $this->entries = Entry::with('category', 'images', 'skills')->get();
+        // Fetch only entries belonging to the authenticated user
+        $this->entries = Entry::with('category', 'images', 'skills')
+            ->where('student_id', auth()->id())
+            ->get();
     }
-}; ?>
+};
+?>
 
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
     <!-- Header -->
