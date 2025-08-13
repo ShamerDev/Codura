@@ -40,7 +40,9 @@ new class extends Component {
             <div class="flex items-center space-x-4">
                 @auth
                     <span class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm font-medium">
-                        {{ Auth::user()->name }}
+                        <a href="{{ route('profile') }}" class="text-white hover:underline">
+                            {{ Auth::user()->name }}
+                        </a>
                     </span>
                     <button wire:click="logout" class="w-full text-start">
                         <x-dropdown-link>
