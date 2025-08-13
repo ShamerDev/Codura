@@ -20,7 +20,7 @@ new class extends Component {
             <div class="flex items-center space-x-3">
                 <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="h-10 w-10">
                 <span class="text-xl font-bold text-gray-900 dark:text-white">
-                    My Portfolio
+                    SEEK-AI
                 </span>
             </div>
 
