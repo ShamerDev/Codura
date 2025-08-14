@@ -9,6 +9,7 @@ use App\Models\EntryImage;
 use App\Models\EntrySkillTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
     use WithFileUploads;
@@ -27,8 +28,18 @@ new class extends Component {
     public $categories = [];
     public $allSkills = [];
 
+    // Update mode properties
+    public $entryId = null;
+    public $isUpdateMode = false;
+    public $existingThumbnail = null;
+    public $existingImages = [];
+
     public function mount()
     {
+        // Check if we're in update mode
+        $this->entryId = request()->query('id');
+        $this->isUpdateMode = !empty($this->entryId);
+
         // Load categories from DB
         $this->categories = EntryCategory::orderBy('name')->get();
 
@@ -42,6 +53,89 @@ new class extends Component {
                 ],
             )
             ->toArray();
+
+        // If update mode, load existing entry data
+        if ($this->isUpdateMode) {
+            $this->loadEntryData();
+        }
+    }
+
+    public function loadEntryData()
+    {
+        $entry = Entry::with(['category', 'images', 'skills'])
+            ->where('id', $this->entryId)
+            ->where('student_id', auth()->id())
+            ->firstOrFail();
+
+        // Populate form fields with existing data
+        $this->title = $entry->title;
+        $this->description = $entry->description;
+        $this->category_id = $entry->category_id;
+        $this->semester = $entry->semester;
+        $this->link = $entry->link;
+
+        // Load existing thumbnail
+        $this->existingThumbnail = $entry->thumbnail_path;
+
+        // Load existing images
+        $this->existingImages = $entry->images->toArray();
+
+        // Load selected skills
+        $this->selectedSkills = $entry->skills->pluck('id')->toArray();
+    }
+
+    public function removeExistingImage($imageId)
+    {
+        $image = EntryImage::where('id', $imageId)
+            ->whereHas('entry', function ($query) {
+                $query->where('student_id', auth()->id());
+            })
+            ->first();
+
+        if ($image) {
+            // Delete file from storage
+            if (Storage::disk('public')->exists($image->image_path)) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+
+            // Delete from database
+            $image->delete();
+
+            // Remove from local array
+            $this->existingImages = collect($this->existingImages)->reject(fn($img) => $img['id'] == $imageId)->values()->toArray();
+
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'title' => 'Image Removed',
+                'message' => 'Image has been deleted successfully.',
+            ]);
+        }
+    }
+
+    public function removeExistingThumbnail()
+    {
+        if ($this->isUpdateMode && $this->existingThumbnail) {
+            $entry = Entry::where('id', $this->entryId)
+                ->where('student_id', auth()->id())
+                ->first();
+
+            if ($entry && $entry->thumbnail_path) {
+                // Delete file from storage
+                if (Storage::disk('public')->exists($entry->thumbnail_path)) {
+                    Storage::disk('public')->delete($entry->thumbnail_path);
+                }
+
+                // Update database
+                $entry->update(['thumbnail_path' => null]);
+                $this->existingThumbnail = null;
+
+                $this->dispatch('notify', [
+                    'type' => 'success',
+                    'title' => 'Thumbnail Removed',
+                    'message' => 'Thumbnail has been deleted successfully.',
+                ]);
+            }
+        }
     }
 
     public function save()
@@ -57,6 +151,15 @@ new class extends Component {
             'selectedSkills' => 'array',
         ]);
 
+        if ($this->isUpdateMode) {
+            $this->updateEntry();
+        } else {
+            $this->createEntry();
+        }
+    }
+
+    public function createEntry()
+    {
         // Save main entry
         $entry = Entry::create([
             'student_id' => Auth::id(),
@@ -96,6 +199,67 @@ new class extends Component {
 
         $this->reset(['title', 'description', 'category_id', 'semester', 'link', 'thumbnail', 'images', 'selectedSkills']);
     }
+
+    public function updateEntry()
+    {
+        $entry = Entry::where('id', $this->entryId)
+            ->where('student_id', auth()->id())
+            ->firstOrFail();
+
+        // Prepare update data
+        $updateData = [
+            'title' => $this->title,
+            'description' => $this->description,
+            'category_id' => $this->category_id,
+            'semester' => $this->semester,
+            'link' => $this->link,
+        ];
+
+        // Handle thumbnail update
+        if ($this->thumbnail) {
+            // Delete old thumbnail if exists
+            if ($entry->thumbnail_path && Storage::disk('public')->exists($entry->thumbnail_path)) {
+                Storage::disk('public')->delete($entry->thumbnail_path);
+            }
+            $updateData['thumbnail_path'] = $this->thumbnail->store('thumbnails', 'public');
+        }
+
+        // Update entry
+        $entry->update($updateData);
+
+        // Handle new images
+        if (!empty($this->images)) {
+            $maxPosition = $entry->images()->max('position') ?? 0;
+            foreach ($this->images as $index => $image) {
+                EntryImage::create([
+                    'entry_id' => $entry->id,
+                    'image_path' => $image->store('entry_images', 'public'),
+                    'position' => $maxPosition + $index + 1,
+                ]);
+            }
+        }
+
+        // Update skills - remove old ones and add new ones
+        EntrySkillTag::where('entry_id', $entry->id)->delete();
+        foreach ($this->selectedSkills as $skillId) {
+            EntrySkillTag::create([
+                'entry_id' => $entry->id,
+                'skill_id' => $skillId,
+                'confidence_score' => 1.0, // Manual selection always 100%
+            ]);
+        }
+
+        // Flash success
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'title' => 'Entry Updated',
+            'message' => 'Your portfolio entry has been updated successfully.',
+        ]);
+
+        // Reload data to reflect changes
+        $this->loadEntryData();
+        $this->reset(['thumbnail', 'images']);
+    }
 };
 ?>
 
@@ -106,12 +270,23 @@ new class extends Component {
             <div
                 class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mb-4">
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6">
-                    </path>
+                    @if ($isUpdateMode)
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                        </path>
+                    @else
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6">
+                        </path>
+                    @endif
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Add Portfolio Entry</h1>
-            <p class="text-gray-600">Showcase your projects and achievements</p>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                {{ $isUpdateMode ? 'Update Portfolio Entry' : 'Add Portfolio Entry' }}
+            </h1>
+            <p class="text-gray-600">
+                {{ $isUpdateMode ? 'Update your project details and showcase your improvements' : 'Showcase your projects and achievements' }}
+            </p>
         </div>
 
         <form wire:submit.prevent="save" class="space-y-8">
@@ -119,7 +294,6 @@ new class extends Component {
             <div
                 class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow transition-all duration-300 hover:shadow-xl">
                 <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-8 py-6 rounded-t-2xl">
-                    <!-- Added rounded-t-2xl -->
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -171,7 +345,7 @@ new class extends Component {
                         removeSkill(skillId) {
                             this.selected = this.selected.filter(id => id !== skillId);
                         }
-                    }" class="space-y-3 relative z-50"> <!-- Increased z-index -->
+                    }" class="space-y-3 relative z-50">
                         <label class="block text-sm font-semibold text-gray-700 mb-3">
                             Skills & Technologies
                             <span class="text-gray-500 font-normal ml-1">(Select all that apply)</span>
@@ -261,7 +435,6 @@ new class extends Component {
             <div
                 class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
                 <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-8 py-6 rounded-t-2xl">
-                    <!-- Added rounded-t-2xl -->
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -365,7 +538,6 @@ new class extends Component {
             <div
                 class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow transition-all duration-300 hover:shadow-xl">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
-                    <!-- Added rounded-t-2xl -->
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -376,10 +548,34 @@ new class extends Component {
                     </h2>
                 </div>
                 <div class="p-8 space-y-8">
+                    <!-- Existing Thumbnail (Update Mode Only) -->
+                    @if ($isUpdateMode && $existingThumbnail)
+                        <div class="space-y-4">
+                            <label class="block text-sm font-semibold text-gray-700">
+                                Current Thumbnail
+                            </label>
+                            <div class="relative inline-block">
+                                <img src="{{ asset('storage/' . $existingThumbnail) }}" alt="Current thumbnail"
+                                    class="w-32 h-32 object-cover rounded-lg shadow-md">
+                                <button type="button" wire:click="removeExistingThumbnail"
+                                    class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Thumbnail Upload -->
                     <div class="space-y-4">
                         <label class="block text-sm font-semibold text-gray-700">
-                            Thumbnail Image
+                            @if ($isUpdateMode && $existingThumbnail)
+                                Replace Thumbnail Image
+                            @else
+                                Thumbnail Image
+                            @endif
                             <span class="text-gray-500 font-normal ml-1">(Main project image)</span>
                         </label>
 
@@ -423,10 +619,39 @@ new class extends Component {
                         </div>
                     </div>
 
+                    <!-- Existing Images (Update Mode Only) -->
+                    @if ($isUpdateMode && !empty($existingImages))
+                        <div class="space-y-4">
+                            <label class="block text-sm font-semibold text-gray-700">
+                                Current Images
+                            </label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                @foreach ($existingImages as $image)
+                                    <div class="relative group">
+                                        <img src="{{ asset('storage/' . $image['image_path']) }}" alt="Existing image"
+                                            class="w-full h-24 object-cover rounded-lg shadow-md">
+                                        <button type="button" wire:click="removeExistingImage({{ $image['id'] }})"
+                                            class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Additional Images Upload -->
                     <div class="space-y-4">
                         <label class="block text-sm font-semibold text-gray-700">
-                            Additional Images
+                            @if ($isUpdateMode)
+                                Add More Images
+                            @else
+                                Additional Images
+                            @endif
                             <span class="text-gray-500 font-normal ml-1">(Project screenshots, diagrams, etc.)</span>
                         </label>
 
@@ -471,18 +696,41 @@ new class extends Component {
                 </div>
             </div>
 
-            <!-- Save Button -->
+            <!-- Save/Update Button -->
             <div class="text-center pt-4">
                 <x-button wire:click="save" spinner="save"
                     class="px-12 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:ring-4 focus:ring-blue-300">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12">
-                        </path>
-                    </svg>
-                    Save Portfolio Entry
+                    @if ($isUpdateMode)
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                        Update Portfolio Entry
+                    @else
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12">
+                            </path>
+                        </svg>
+                        Save Portfolio Entry
+                    @endif
                 </x-button>
             </div>
+
+            <!-- Back to Details Button (Update Mode Only) -->
+            @if ($isUpdateMode)
+                <div class="text-center">
+                    <a href="{{ route('user.entrydetails', ['id' => $entryId]) }}"
+                        class="inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:ring-4 focus:ring-gray-200 transition-all">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Entry Details
+                    </a>
+                </div>
+            @endif
         </form>
     </div>
 </div>

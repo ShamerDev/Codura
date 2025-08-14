@@ -42,8 +42,10 @@ new class extends Component {
                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md">
                     {{ $entry->category->name ?? 'Uncategorized' }}
                 </span>
-                <span
-                    class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium">{{ $entry->semester }}</span>
+                @if($entry->semester)
+                    <span
+                        class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium">{{ $entry->semester }}</span>
+                @endif
             </div>
 
             <!-- Skills -->
@@ -95,7 +97,7 @@ new class extends Component {
 
         <!-- Update Entry Button -->
         <div class="text-center mt-8">
-            <a href="{{ route('user.addentry', $entry->id) }}"
+            <a href="{{ route('user.addentry', ['id' => $entry->id]) }}"
                 class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-800 focus:ring-4 focus:ring-blue-300 transition-all">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
