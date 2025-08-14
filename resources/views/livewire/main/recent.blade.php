@@ -12,7 +12,7 @@ new class extends Component {
         $this->recentEntries = Entry::with('category', 'skills')
             ->where('student_id', auth()->id())
             ->latest()
-            ->take(6) // Limit to 6 entries for a compact layout
+            ->take(3) // Limit to 6 entries for a compact layout
             ->get();
     }
 };
