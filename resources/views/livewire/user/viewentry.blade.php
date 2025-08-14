@@ -80,7 +80,7 @@ new class extends Component {
                             <div
                                 class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
                                 <div class="absolute bottom-4 left-4 right-4">
-                                    <a href="#"
+                                    <a href="{{ route('user.entrydetails', ['id' => $entry->id]) }}"
                                         class="inline-flex items-center px-4 py-2 bg-white/95 backdrop-blur-sm text-slate-700 rounded-lg hover:bg-white transition-all font-medium text-sm shadow-xl hover:shadow-2xl transform hover:scale-105">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">

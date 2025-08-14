@@ -24,4 +24,8 @@ Route::view('user/viewentry', 'user.viewentry')
     ->middleware(['auth'])
     ->name('user.viewentry');
 
-require __DIR__.'/auth.php';
+Route::view('user/entrydetails', 'user.entrydetails')
+    ->middleware(['auth'])
+    ->name('user.entrydetails');
+
+require __DIR__ . '/auth.php';
