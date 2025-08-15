@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -123,4 +122,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SBERT Service URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used to connect to the Sentence-BERT service for text
+    | embeddings or semantic search functionality.
+    |
+    */
+
+    'sbert_service_url' => env('SBERT_SERVICE_URL', 'http://localhost:8001'),
 ];
