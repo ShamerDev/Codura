@@ -262,6 +262,35 @@ new class extends Component {
         $this->loadEntryData();
         $this->reset(['thumbnail', 'images']);
     }
+
+    // Add this new listener method
+    #[\Livewire\Attributes\On('skills-generated')]
+    public function handleSkillsGenerated($suggestedSkills)
+    {
+        // Clear current selection
+        $this->selectedSkills = [];
+
+        // Add suggested skills to selection
+        foreach ($suggestedSkills as $skill) {
+            if (!in_array($skill['id'], $this->selectedSkills)) {
+                $this->selectedSkills[] = $skill['id'];
+            }
+        }
+
+        // Optional: Show a message about auto-selection
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'title' => 'Skills Auto-Selected',
+            'message' => count($suggestedSkills) . ' relevant skills have been automatically selected for you.',
+        ]);
+    }
+
+    // Add method to watch description changes and sync with SBERT
+    public function updatedDescription()
+    {
+        // Dispatch event to SBERT component to update its description
+        $this->dispatch('update-description', $this->description);
+    }
 };
 ?>
 

@@ -77,7 +77,7 @@ new class extends Component {
             $this->dispatch('skills-generated', $this->suggestedSkills);
 
             // Show success message
-            session()->flash('sbert-success', count($this->suggestedSkills) . ' relevant skills suggested and applied!');
+            session()->flash('sbert-success', count($this->suggestedSkills) . ' relevant skills suggested and automatically applied!');
         } catch (\Exception $e) {
             $this->addError('generation', 'Connection error: ' . $e->getMessage());
         } finally {
