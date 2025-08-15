@@ -1,3 +1,5 @@
+<!-- addentry.blade.php -->
+
 <?php
 
 use Livewire\Volt\Component;
@@ -316,6 +318,9 @@ new class extends Component {
                             wire:model.defer="description" rows="6"
                             class="transition-all duration-300 focus:scale-[1.01]" />
                     </div>
+
+                    <!-- SBERT Component -->
+                    <livewire:main.sbert />
 
                     <!-- Skills Selector -->
                     <div x-data="{
