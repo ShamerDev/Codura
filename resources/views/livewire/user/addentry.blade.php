@@ -1,5 +1,3 @@
-<!-- addentry.blade.php -->
-
 <?php
 
 use Livewire\Volt\Component;
@@ -10,7 +8,7 @@ use App\Models\Skill;
 use App\Models\EntryImage;
 use App\Models\EntrySkillTag;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
@@ -29,6 +27,8 @@ new class extends Component {
     // Data for selects
     public $categories = [];
     public $allSkills = [];
+    public $suggestedSkills = [];
+    public $isGenerating = false;
 
     // Update mode properties
     public $entryId = null;
@@ -45,13 +45,13 @@ new class extends Component {
         // Load categories from DB
         $this->categories = EntryCategory::orderBy('name')->get();
 
-        // Load skills into key/value array for Alpine
+        // Load skills into key/value array - FIXED: Using correct structure
         $this->allSkills = Skill::orderBy('name')
             ->get()
             ->map(
                 fn($skill) => [
-                    'key' => $skill->id,
-                    'value' => $skill->name,
+                    'id' => $skill->id,
+                    'name' => $skill->name,
                 ],
             )
             ->toArray();
@@ -86,57 +86,57 @@ new class extends Component {
         $this->selectedSkills = $entry->skills->pluck('id')->toArray();
     }
 
-    public function removeExistingImage($imageId)
+    public function generateSkillTags()
     {
-        $image = EntryImage::where('id', $imageId)
-            ->whereHas('entry', function ($query) {
-                $query->where('student_id', auth()->id());
-            })
-            ->first();
-
-        if ($image) {
-            // Delete file from storage
-            if (Storage::disk('public')->exists($image->image_path)) {
-                Storage::disk('public')->delete($image->image_path);
-            }
-
-            // Delete from database
-            $image->delete();
-
-            // Remove from local array
-            $this->existingImages = collect($this->existingImages)->reject(fn($img) => $img['id'] == $imageId)->values()->toArray();
-
-            $this->dispatch('notify', [
-                'type' => 'success',
-                'title' => 'Image Removed',
-                'message' => 'Image has been deleted successfully.',
-            ]);
+        // Validate description is not empty
+        if (empty(trim($this->description))) {
+            $this->addError('description', 'Please enter a description first');
+            return;
         }
-    }
 
-    public function removeExistingThumbnail()
-    {
-        if ($this->isUpdateMode && $this->existingThumbnail) {
-            $entry = Entry::where('id', $this->entryId)
-                ->where('student_id', auth()->id())
-                ->first();
+        $this->isGenerating = true;
+        $this->suggestedSkills = [];
+        $this->clearValidation();
 
-            if ($entry && $entry->thumbnail_path) {
-                // Delete file from storage
-                if (Storage::disk('public')->exists($entry->thumbnail_path)) {
-                    Storage::disk('public')->delete($entry->thumbnail_path);
-                }
+        try {
+            // Prepare data for FastAPI service
+            $requestData = [
+                'description' => $this->description,
+                'skills' => $this->allSkills,
+            ];
 
-                // Update database
-                $entry->update(['thumbnail_path' => null]);
-                $this->existingThumbnail = null;
+            // Call FastAPI service
+            $serviceUrl = config('app.sbert_service_url', 'http://localhost:8001');
+            $response = Http::timeout(30)->post($serviceUrl . '/generate-skills', $requestData);
 
-                $this->dispatch('notify', [
-                    'type' => 'success',
-                    'title' => 'Thumbnail Removed',
-                    'message' => 'Thumbnail has been deleted successfully.',
-                ]);
+            if (!$response->successful()) {
+                $this->addError('generation', 'Failed to connect to AI service. Status: ' . $response->status());
+                return;
             }
+
+            $result = $response->json();
+
+            if (!$result['success']) {
+                $this->addError('generation', $result['error'] ?? 'Unknown error occurred');
+                return;
+            }
+
+            // Store the suggestions
+            $this->suggestedSkills = $result['suggested_skills'];
+
+            // Automatically select suggested skills
+            foreach ($this->suggestedSkills as $skill) {
+                if (!in_array($skill['id'], $this->selectedSkills)) {
+                    $this->selectedSkills[] = $skill['id'];
+                }
+            }
+
+            // Show success message
+            session()->flash('sbert-success', count($this->suggestedSkills) . ' relevant skills suggested and automatically applied!');
+        } catch (\Exception $e) {
+            $this->addError('generation', 'Connection error: ' . $e->getMessage());
+        } finally {
+            $this->isGenerating = false;
         }
     }
 
@@ -199,7 +199,7 @@ new class extends Component {
             'message' => 'Your portfolio entry has been saved successfully.',
         ]);
 
-        $this->reset(['title', 'description', 'category_id', 'semester', 'link', 'thumbnail', 'images', 'selectedSkills']);
+        $this->reset(['title', 'description', 'category_id', 'semester', 'link', 'thumbnail', 'images', 'selectedSkills', 'suggestedSkills']);
     }
 
     public function updateEntry()
@@ -298,170 +298,191 @@ new class extends Component {
     <div class="max-w-4xl mx-auto px-6">
         <!-- Header -->
         <div class="text-center mb-8">
-            <div
-                class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    @if ($isUpdateMode)
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                        </path>
-                    @else
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6">
-                        </path>
-                    @endif
-                </svg>
-            </div>
             <h1 class="text-3xl font-bold text-gray-900 mb-2">
                 {{ $isUpdateMode ? 'Update Portfolio Entry' : 'Add Portfolio Entry' }}
             </h1>
-            <p class="text-gray-600">
-                {{ $isUpdateMode ? 'Update your project details and showcase your improvements' : 'Showcase your projects and achievements' }}
-            </p>
         </div>
 
         <form wire:submit.prevent="save" class="space-y-8">
             <!-- Basic Information Card -->
-            <div
-                class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow transition-all duration-300 hover:shadow-xl">
-                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-8 py-6 rounded-t-2xl">
-                    <h2 class="text-xl font-semibold text-white flex items-center">
-                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Basic Information
-                    </h2>
-                </div>
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow">
                 <div class="p-8 space-y-6">
                     <!-- Title -->
                     <div class="group">
                         <x-input label="Project Title" placeholder="Enter an engaging title for your project"
-                            wire:model.defer="title" class="transition-all duration-300 focus:scale-[1.02]" />
+                            wire:model.defer="title" />
                     </div>
 
-                    <!-- Description -->
-                    <div class="group">
-                        <x-textarea label="Description"
-                            placeholder="Describe your project, what you learned, challenges you overcame, and the impact it made..."
-                            wire:model.defer="description" rows="6"
-                            class="transition-all duration-300 focus:scale-[1.01]" />
-                    </div>
-
-                    <!-- SBERT Component -->
-                    <livewire:main.sbert />
-
-                    <!-- Skills Selector -->
-                    <div x-data="{
-                        search: '',
-                        selected: @entangle('selectedSkills'),
-                        allSkills: @js($allSkills),
-                        dropdownOpen: false,
-                        get filteredSkills() {
-                            return this.allSkills.filter(s =>
-                                this.search === '' || s.value.toLowerCase().includes(this.search.toLowerCase())
-                            );
-                        },
-                        toggleDropdown() {
-                            this.dropdownOpen = !this.dropdownOpen;
-                            if (this.dropdownOpen) {
-                                this.$nextTick(() => {
-                                    this.$refs.searchInput.focus();
-                                });
-                            }
-                        },
-                        selectSkill(skill) {
-                            if (!this.selected.includes(skill.key)) {
-                                this.selected.push(skill.key);
-                            }
-                            this.search = '';
-                        },
-                        removeSkill(skillId) {
-                            this.selected = this.selected.filter(id => id !== skillId);
-                        }
-                    }" class="space-y-3 relative z-50">
-                        <label class="block text-sm font-semibold text-gray-700 mb-3">
-                            Skills & Technologies
-                            <span class="text-gray-500 font-normal ml-1">(Select all that apply)</span>
+                    <!-- Project Description -->
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            Project Description
                         </label>
+                        <textarea wire:model="description" id="description" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-vertical"
+                            placeholder="Describe your project, experience, or skills you want to match."></textarea>
+                        @error('description')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                        <!-- Searchable Dropdown -->
-                        <div class="relative">
-                            <div class="relative">
-                                <input type="text" x-ref="searchInput" x-model="search" @click="dropdownOpen = true"
-                                    @focus="dropdownOpen = true" placeholder="🔍 Search or browse skills..."
-                                    class="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300" />
-                                <button type="button" @click="toggleDropdown()"
-                                    class="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <svg class="w-5 h-5 text-gray-400 transition-transform duration-200"
-                                        :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
+                    <!-- Generate Skills Button -->
+                    <div class="group">
+                        <button type="button" wire:click="generateSkillTags" wire:loading.attr="disabled"
+                            wire:target="generateSkillTags"
+                            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg">
+                            <span wire:loading.remove wire:target="generateSkillTags">Generate Skill Tags</span>
+                            <span wire:loading wire:target="generateSkillTags">AI is thinking...</span>
+                        </button>
+                        <p class="text-sm text-gray-500 mt-2">
+                            AI will analyze your description and suggest relevant skills
+                        </p>
+                    </div>
+
+                    <!-- Preview of Suggested Skills (Optional) -->
+                    @if (!empty($suggestedSkills) && !$isGenerating)
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                AI Suggestions Applied:
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (array_slice($suggestedSkills, 0, 5) as $skill)
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                        {{ $skill['name'] }}
+                                        <span class="ml-1 opacity-75">
+                                            ({{ number_format($skill['similarity'] * 100, 0) }}%)
+                                        </span>
+                                    </span>
+                                @endforeach
+                                @if (count($suggestedSkills) > 5)
+                                    <span class="text-xs text-blue-600">
+                                        +{{ count($suggestedSkills) - 5 }} more
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- FIXED Skills Selector -->
+            <div x-data="{
+                search: '',
+                selected: @entangle('selectedSkills'),
+                allSkills: @js($allSkills),
+                dropdownOpen: false,
+                get filteredSkills() {
+                    return this.allSkills.filter(skill =>
+                        this.search === '' || skill.name.toLowerCase().includes(this.search.toLowerCase())
+                    );
+                },
+                toggleDropdown() {
+                    this.dropdownOpen = !this.dropdownOpen;
+                    if (this.dropdownOpen) {
+                        this.$nextTick(() => {
+                            this.$refs.searchInput.focus();
+                        });
+                    }
+                },
+                selectSkill(skill) {
+                    if (!this.selected.includes(skill.id)) {
+                        this.selected.push(skill.id);
+                    }
+                    this.search = '';
+                },
+                removeSkill(skillId) {
+                    this.selected = this.selected.filter(id => id !== skillId);
+                },
+                getSkillName(skillId) {
+                    const skill = this.allSkills.find(s => s.id == skillId);
+                    return skill ? skill.name : '';
+                }
+            }" class="relative">
+
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    Skills & Technologies
+                    <span class="text-gray-500 font-normal ml-1">(Select all that apply)</span>
+                </label>
+
+                <!-- Searchable Dropdown -->
+                <div class="relative">
+                    <div class="relative">
+                        <input type="text" x-ref="searchInput" x-model="search" @click="dropdownOpen = true"
+                            @focus="dropdownOpen = true" placeholder="🔍 Search or browse skills..."
+                            class="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300" />
+                        <button type="button" @click="toggleDropdown()"
+                            class="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                                :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- FIXED Dropdown List -->
+                    <div x-show="dropdownOpen" x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 translate-y-1" @click.away="dropdownOpen = false"
+                        class="absolute top-full left-0 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50">
+
+                        <template x-for="skill in filteredSkills" :key="skill.id">
+                            <div @click="selectSkill(skill)"
+                                :class="selected.includes(skill.id) ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
+                                class="px-4 py-3 cursor-pointer transition-colors duration-200 flex items-center justify-between">
+                                <span x-text="skill.name" class="font-medium"></span>
+                                <div x-show="selected.includes(skill.id)" class="text-blue-500">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                            clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div x-show="filteredSkills.length === 0" class="px-4 py-6 text-center text-gray-500">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                                </path>
+                            </svg>
+                            No skills found matching your search.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Skills Tags -->
+                <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                    class="mt-4">
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="skillId in selected" :key="skillId">
+                            <div
+                                class="group bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-full flex items-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                                <span x-text="getSkillName(skillId)" class="mr-2"></span>
+                                <button type="button" @click="removeSkill(skillId)"
+                                    class="ml-1 w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/50">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 9l-7 7-7-7"></path>
+                                            d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
                             </div>
-
-                            <!-- Dropdown List -->
-                            <div x-show="dropdownOpen" x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 translate-y-1"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-150"
-                                x-transition:leave-start="opacity-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 translate-y-1" @click.away="dropdownOpen = false"
-                                class="w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                <template x-for="skill in filteredSkills" :key="skill.key">
-                                    <div @click="selectSkill(skill)"
-                                        :class="selected.includes(skill.key) ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
-                                        class="px-4 py-3 cursor-pointer transition-colors duration-200 flex items-center justify-between">
-                                        <span x-text="skill.value" class="font-medium"></span>
-                                        <div x-show="selected.includes(skill.key)" class="text-blue-500">
-                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                    clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </template>
-                                <div x-show="filteredSkills.length === 0" class="px-4 py-6 text-center text-gray-500">
-                                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                                        </path>
-                                    </svg>
-                                    No skills found matching your search.
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Selected Skills Tags -->
-                        <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                            class="mt-4">
-                            <div class="flex flex-wrap gap-2">
-                                <template x-for="id in selected" :key="id">
-                                    <div
-                                        class="group bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-full flex items-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                                        <span x-text="allSkills.find(skill => skill.key == id)?.value"
-                                            class="mr-2"></span>
-                                        <button type="button" @click="removeSkill(id)"
-                                            class="ml-1 w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/50">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </template>
-                            </div>
-                            <p class="text-sm text-gray-500 mt-2">
-                                <span x-text="selected.length"></span> skill(s) selected
-                            </p>
-                        </div>
+                        </template>
                     </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        <span x-text="selected.length"></span> skill(s) selected
+                    </p>
                 </div>
             </div>
 
@@ -480,14 +501,21 @@ new class extends Component {
                 </div>
                 <div class="p-8 space-y-6">
                     <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Category -->
-                        <div x-data="{ dropdownOpen: false, selected: @entangle('category_id'), options: @js($categories) }" class="relative">
+                        <!-- FIXED Category Dropdown -->
+                        <div x-data="{
+                            dropdownOpen: false,
+                            selected: @entangle('category_id'),
+                            options: @js($categories),
+                            getSelectedName() {
+                                const option = this.options.find(opt => opt.id == this.selected);
+                                return option ? option.name : 'Choose a category';
+                            }
+                        }" class="relative">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Category</label>
                             <div class="relative">
                                 <button @click="dropdownOpen = !dropdownOpen" type="button"
                                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-left">
-                                    <span
-                                        x-text="options.find(option => option.id == selected)?.name || 'Choose a category'"></span>
+                                    <span x-text="getSelectedName()"></span>
                                     <svg class="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                                         :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
@@ -504,7 +532,8 @@ new class extends Component {
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     @click.away="dropdownOpen = false"
-                                    class="absolute left-0 top-full mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50">
+                                    class="absolute left-0 top-full mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-40">
+
                                     <template x-for="option in options" :key="option.id">
                                         <div @click="selected = option.id; dropdownOpen = false"
                                             :class="selected === option.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
@@ -512,6 +541,7 @@ new class extends Component {
                                             <span x-text="option.name"></span>
                                         </div>
                                     </template>
+
                                     <div x-show="options.length === 0" class="px-4 py-6 text-center text-gray-500">
                                         No categories found.
                                     </div>
@@ -519,8 +549,12 @@ new class extends Component {
                             </div>
                         </div>
 
-                        <!-- Semester -->
-                        <div x-data="{ dropdownOpen: false, selected: @entangle('semester'), options: ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'] }" class="relative">
+                        <!-- FIXED Semester Dropdown -->
+                        <div x-data="{
+                            dropdownOpen: false,
+                            selected: @entangle('semester'),
+                            options: ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8']
+                        }" class="relative">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Semester</label>
                             <div class="relative">
                                 <button @click="dropdownOpen = !dropdownOpen" type="button"
@@ -542,7 +576,8 @@ new class extends Component {
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     @click.away="dropdownOpen = false"
-                                    class="absolute left-0 top-full mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50">
+                                    class="absolute left-0 top-full mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-30">
+
                                     <template x-for="option in options" :key="option">
                                         <div @click="selected = option; dropdownOpen = false"
                                             :class="selected === option ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
@@ -550,9 +585,6 @@ new class extends Component {
                                             <span x-text="option"></span>
                                         </div>
                                     </template>
-                                    <div x-show="options.length === 0" class="px-4 py-6 text-center text-gray-500">
-                                        No semesters found.
-                                    </div>
                                 </div>
                             </div>
                         </div>
