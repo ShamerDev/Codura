@@ -28,4 +28,8 @@ Route::view('user/entrydetails', 'user.entrydetails')
     ->middleware(['auth'])
     ->name('user.entrydetails');
 
+Route::view('user/manageentries', 'user.manageentries')
+    ->middleware(['auth'])
+    ->name('user.manageentries');
+
 require __DIR__ . '/auth.php';

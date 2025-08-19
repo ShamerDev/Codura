@@ -34,6 +34,9 @@ new class extends Component {
                 <a href="{{ route('user.viewentry') }}"
                     class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">View
                     Entries</a>
+                <a href="{{ route('user.manageentries') }}"
+                    class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">Manage
+                    Entries</a>
             </div>
 
             <!-- User Actions -->

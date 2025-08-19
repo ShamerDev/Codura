@@ -170,7 +170,7 @@ new class extends Component {
             'category_id' => $this->category_id,
             'semester' => $this->semester,
             'link' => $this->link,
-            'is_public' => true, // Default public
+            'is_public' => false, // Default public
             'thumbnail_path' => $this->thumbnail ? $this->thumbnail->store('thumbnails', 'public') : null,
         ]);
 
