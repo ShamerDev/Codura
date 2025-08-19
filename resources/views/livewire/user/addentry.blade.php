@@ -285,6 +285,16 @@ new class extends Component {
         ]);
     }
 
+    // Add this method to the component class
+    #[\Livewire\Attributes\On('clear-skills')]
+    public function clearSkills()
+    {
+        $this->selectedSkills = [];
+        $this->suggestedSkills = [];
+        // Re-render the component
+        $this->dispatch('skills-cleared');
+    }
+
     // Add method to watch description changes and sync with SBERT
     public function updatedDescription()
     {
@@ -425,7 +435,7 @@ new class extends Component {
                         </button>
                     </div>
 
-                    <!-- FIXED Dropdown List -->
+                    <!-- Dropdown List -->
                     <div x-show="dropdownOpen" x-transition:enter="transition ease-out duration-200"
                         x-transition:enter-start="opacity-0 translate-y-1"
                         x-transition:enter-end="opacity-100 translate-y-0"
@@ -480,9 +490,20 @@ new class extends Component {
                             </div>
                         </template>
                     </div>
-                    <p class="text-sm text-gray-500 mt-2">
-                        <span x-text="selected.length"></span> skill(s) selected
-                    </p>
+                    <div class="flex items-center justify-between mt-2">
+                        <p class="text-sm text-gray-500">
+                            <span x-text="selected.length"></span> skill(s) selected
+                        </p>
+                        <button type="button" @click="selected = []; $dispatch('clear-skills')"
+                            class="text-sm text-red-500 hover:text-red-700 transition-colors duration-200 font-medium flex items-center">
+                            Clear all
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -501,7 +522,7 @@ new class extends Component {
                 </div>
                 <div class="p-8 space-y-6">
                     <div class="grid md:grid-cols-2 gap-6">
-                        <!-- FIXED Category Dropdown -->
+                        <!-- Category Dropdown -->
                         <div x-data="{
                             dropdownOpen: false,
                             selected: @entangle('category_id'),
@@ -549,7 +570,7 @@ new class extends Component {
                             </div>
                         </div>
 
-                        <!-- FIXED Semester Dropdown -->
+                        <!-- Semester Dropdown -->
                         <div x-data="{
                             dropdownOpen: false,
                             selected: @entangle('semester'),
