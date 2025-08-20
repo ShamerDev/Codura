@@ -2,17 +2,15 @@
 
 use Livewire\Volt\Component;
 use App\Models\Entry;
-use App\Models\Portfolio;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 new class extends Component {
     public $entries = [];
-    public $portfolio;
+    public $publicLink;
 
     public function mount()
     {
         $this->loadEntries();
-        $this->loadPortfolio();
+        $this->setPublicLink();
     }
 
     public function loadEntries()
@@ -21,17 +19,6 @@ new class extends Component {
             ->with('category')
             ->orderBy('created_at', 'desc')
             ->get();
-    }
-
-    public function loadPortfolio()
-    {
-        $this->portfolio = Portfolio::firstOrCreate(
-            ['user_id' => auth()->id()],
-            [
-                'slug' => uniqid(),
-                'public_link' => url('/portfolio/' . uniqid()),
-            ],
-        );
     }
 
     public function toggleVisibility($id)
@@ -45,34 +32,41 @@ new class extends Component {
 
         $this->loadEntries();
     }
+
+    public function setPublicLink()
+    {
+        if (auth()->user()->portfolio) {
+            $this->publicLink = route('portfolio.viewpublic', [
+                'slug' => auth()->user()->portfolio->slug
+            ]);
+        } else {
+            $this->publicLink = '#'; // fallback if no portfolio yet
+        }
+    }
 };
 ?>
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-6">
-    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-10">
 
-        <!-- Portfolio Share Section -->
-        <div class="bg-gray-50 border rounded-2xl p-6 shadow-sm flex items-center justify-between">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800 mb-2">Your Public Portfolio</h2>
-                <p class="text-gray-600 text-sm mb-3">
-                    Share this link to showcase all entries you've set as <span class="font-medium">Public</span>.
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-6">
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+
+        <!-- PUBLIC LINK & QR CODE -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Your Public Portfolio</h1>
+        <div class="flex flex-col md:flex-row items-center justify-between bg-gray-50 p-6 rounded-xl mb-10 shadow-sm">
+            <div class="mb-4 md:mb-0">
+                <p class="text-gray-600 mb-2">
+                    Share this link with others to view all your public entries:
                 </p>
-                <a href="{{ $portfolio->public_link }}" target="_blank"
-                    class="text-indigo-600 font-medium hover:underline">
-                    {{ $portfolio->public_link }}
+                <a href="{{ $publicLink }}" target="_blank" class="text-blue-600 hover:underline break-words">
+                    {{ $publicLink }}
                 </a>
             </div>
-
-            <!-- QR Code (using SVG backend instead of Imagick) -->
-            <div class="flex-shrink-0">
-                <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(120)->generate($portfolio->public_link)) }}"
-                    alt="QR Code" class="rounded-lg shadow-md border w-32 h-32" />
+            <div>
+                {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(120)->generate($publicLink) !!}
             </div>
         </div>
 
-        <!-- Manage Entries Section -->
+        <!-- MANAGE ENTRIES -->
         <h1 class="text-3xl font-bold text-gray-800 mb-8">Manage Your Entries</h1>
-
         @if ($entries->isEmpty())
             <p class="text-gray-600 text-center">No entries yet. Create one to get started.</p>
         @else
@@ -80,8 +74,7 @@ new class extends Component {
                 @foreach ($entries as $entry)
                     <div
                         class="flex items-center justify-between bg-gray-50 border rounded-xl p-4 shadow-sm hover:shadow-md transition">
-
-                        <!-- Thumbnail + Info -->
+                        <!-- Thumbnail -->
                         <div class="flex items-center space-x-4">
                             @if ($entry->thumbnail_path)
                                 <img src="{{ asset('storage/' . $entry->thumbnail_path) }}"
@@ -92,7 +85,7 @@ new class extends Component {
                                     No Image
                                 </div>
                             @endif
-
+                            <!-- Title & Meta -->
                             <div>
                                 <h2 class="text-lg font-semibold text-gray-800">{{ $entry->title }}</h2>
                                 <p class="text-sm text-gray-600">
@@ -100,24 +93,20 @@ new class extends Component {
                                 </p>
                             </div>
                         </div>
-
-                        <!-- Toggle (using Tailwind peer feature for better toggle behavior) -->
+                        <!-- Toggle Visibility -->
                         <div class="flex items-center space-x-6">
                             <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" class="sr-only peer"
+                                <input type="checkbox" class="sr-only"
                                     wire:click="toggleVisibility({{ $entry->id }})"
                                     {{ $entry->is_public ? 'checked' : '' }}>
-                                <div
-                                    class="relative w-12 h-6 bg-gray-300 peer-checked:bg-green-500 rounded-full transition-colors">
+                                <div class="w-12 h-6 bg-gray-300 rounded-full shadow-inner relative">
                                     <div
-                                        class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-6">
+                                        class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition {{ $entry->is_public ? 'translate-x-6 bg-green-500' : '' }}">
                                     </div>
                                 </div>
                             </label>
-
                             <span
-                                class="px-3 py-1 rounded-full text-sm font-medium
-                                {{ $entry->is_public ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600' }}">
+                                class="px-3 py-1 rounded-full text-sm font-medium {{ $entry->is_public ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600' }}">
                                 {{ $entry->is_public ? 'Public' : 'Private' }}
                             </span>
                         </div>
