@@ -2,6 +2,7 @@
 
 use Livewire\Volt\Component;
 use App\Models\Entry;
+use Illuminate\Support\Str;
 
 new class extends Component {
     public $entries = [];
@@ -37,10 +38,23 @@ new class extends Component {
     {
         if (auth()->user()->portfolio) {
             $this->publicLink = route('portfolio.viewpublic', [
-                'slug' => auth()->user()->portfolio->slug
+                'slug' => auth()->user()->portfolio->slug,
             ]);
         } else {
-            $this->publicLink = '#'; // fallback if no portfolio yet
+            $this->publicLink = '#';
+        }
+    }
+
+    public function resetLink()
+    {
+        $portfolio = auth()->user()->portfolio;
+
+        if ($portfolio) {
+            $portfolio->slug = Str::random(16);
+            $portfolio->save();
+            $this->setPublicLink(); // refresh link on page
+            // Volt-safe JS notification
+            $this->js('window.dispatchEvent(new CustomEvent("notify", { detail: "Portfolio link reset successfully!" }))');
         }
     }
 };
@@ -59,6 +73,16 @@ new class extends Component {
                 <a href="{{ $publicLink }}" target="_blank" class="text-blue-600 hover:underline break-words">
                     {{ $publicLink }}
                 </a>
+
+                <div class="mt-3">
+                    <button wire:click="resetLink"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        Reset Link
+                    </button>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Regenerating will break the old link.
+                    </p>
+                </div>
             </div>
             <div>
                 {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(120)->generate($publicLink) !!}

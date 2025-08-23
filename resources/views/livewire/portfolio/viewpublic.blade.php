@@ -10,28 +10,19 @@ new class extends Component {
 
     public function mount()
     {
-        //Get the slug from query string
         $this->slug = request()->query('slug');
 
-        //Find the portfolio by slug
         $portfolio = Portfolio::where('slug', $this->slug)->first();
 
-        //Handle missing portfolio
         if (!$portfolio) {
-            $this->entries = []; // nothing to show
+            $this->entries = [];
             return;
         }
 
-        //Load all public entries for that user
-        $this->entries = Entry::where('student_id', $portfolio->user_id)
-            ->where('is_public', 1)
-            ->with('category')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $this->entries = Entry::where('student_id', $portfolio->user_id)->where('is_public', 1)->with('category')->orderBy('created_at', 'desc')->get();
     }
 };
 ?>
-
 
 <div class="min-h-screen bg-gray-50 py-10 px-6">
     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-8">
@@ -45,10 +36,11 @@ new class extends Component {
                     <div class="bg-gray-50 p-4 rounded-xl shadow-sm flex flex-col">
                         @if ($entry->thumbnail_path)
                             <img src="{{ asset('storage/' . $entry->thumbnail_path) }}"
-                                 class="w-full h-40 object-cover rounded-lg mb-4" />
+                                class="w-full h-40 object-cover rounded-lg mb-4" />
                         @endif
                         <h2 class="text-lg font-semibold text-gray-800">{{ $entry->title }}</h2>
-                        <p class="text-sm text-gray-600">{{ $entry->category->name ?? 'Uncategorized' }} • {{ $entry->semester }}</p>
+                        <p class="text-sm text-gray-600">{{ $entry->category->name ?? 'Uncategorized' }} •
+                            {{ $entry->semester }}</p>
                     </div>
                 @endforeach
             </div>
