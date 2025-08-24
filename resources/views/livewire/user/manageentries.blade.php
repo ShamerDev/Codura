@@ -36,13 +36,18 @@ new class extends Component {
 
     public function setPublicLink()
     {
-        if (auth()->user()->portfolio) {
-            $this->publicLink = route('portfolio.viewpublic', [
-                'slug' => auth()->user()->portfolio->slug,
+        $user = auth()->user();
+        if (!$user->portfolio) {
+            // Create portfolio if missing
+            $user->portfolio()->create([
+                'slug' => \Illuminate\Support\Str::random(16),
+                // add other required fields if needed
             ]);
-        } else {
-            $this->publicLink = '#';
+            $user->refresh(); // reload user with portfolio
         }
+        $this->publicLink = route('portfolio.viewpublic', [
+            'slug' => $user->portfolio->slug,
+        ]);
     }
 
     public function resetLink()
