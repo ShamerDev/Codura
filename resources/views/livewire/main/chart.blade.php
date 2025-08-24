@@ -9,10 +9,9 @@ new class extends Component {
     public function mount(): void
     {
         $studentId = auth()->id();
-        $maxScore = 0.5; // Maximum score for a category
-        $growthRate = 0.3; // Higher = faster early growth, lower = slower growth
+        $maxScore = 0.5;
+        $growthRate = 0.3;
 
-        // Query to get number of distinct entries per skill category for this student
         $this->chartData = DB::table('skill_categories')
             ->leftJoin('skill_category_links', 'skill_categories.id', '=', 'skill_category_links.skill_category_id')
             ->leftJoin('skills', 'skill_category_links.skill_id', '=', 'skills.id')
@@ -32,7 +31,6 @@ new class extends Component {
             ->pluck('normalized_score', 'skill_categories.name')
             ->toArray();
 
-        // Make sure all categories exist in chartData
         $allCategories = DB::table('skill_categories')->pluck('name')->toArray();
         foreach ($allCategories as $category) {
             if (!isset($this->chartData[$category])) {
@@ -57,76 +55,71 @@ new class extends Component {
 
     <div class="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-6 border border-gray-200">
         <div class="flex justify-center">
-            <div class="relative" style="width: 500px; height: 500px;">
-                <canvas id="skillChart"></canvas>
+            <div class="relative" style="width: 500px; height: 500px;" x-data x-init="new Chart($refs.canvas, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(@js($chartData)),
+                    datasets: [{
+                        label: 'Skill Progression',
+                        data: Object.values(@js($chartData)),
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#374151',
+                                font: {
+                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
+                                    size: 9
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 1,
+                            ticks: {
+                                color: '#6B7280',
+                                font: {
+                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
+                                    size: 9
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(107, 114, 128, 0.2)'
+                            },
+                            angleLines: {
+                                color: 'rgba(107, 114, 128, 0.2)'
+                            },
+                            pointLabels: {
+                                color: '#374151',
+                                font: {
+                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
+                                    size: 9,
+                                    weight: 'bold'
+                                },
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            })">
+                <canvas x-ref="canvas"></canvas>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const chartData = @json($chartData);
-
-        new Chart(document.getElementById('skillChart'), {
-            type: 'radar',
-            data: {
-                labels: Object.keys(chartData),
-                datasets: [{
-                    label: 'Skill Progression',
-                    data: Object.values(chartData),
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderColor: 'rgb(59, 130, 246)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgb(59, 130, 246)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#374151',
-                            font: {
-                                family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                size: 9
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    r: {
-                        suggestedMin: 0,
-                        suggestedMax: 1,
-                        ticks: {
-                            color: '#6B7280',
-                            font: {
-                                family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                size: 9
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(107, 114, 128, 0.2)'
-                        },
-                        angleLines: {
-                            color: 'rgba(107, 114, 128, 0.2)'
-                        },
-                        pointLabels: {
-                            color: '#374151',
-                            font: {
-                                family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                size: 9,
-                                weight: 'bold'
-                            },
-                            padding: 20 // Added padding to prevent labels from being cut off
-                        }
-                    }
-                }
-            }
-        });
-    </script>
 </div>

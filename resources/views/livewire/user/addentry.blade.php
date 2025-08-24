@@ -315,7 +315,7 @@ new class extends Component {
 
         <form wire:submit.prevent="save" class="space-y-8">
             <!-- Basic Information Card -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow relative z-30">
                 <div class="p-8 space-y-6">
                     <!-- Title -->
                     <div class="group">
@@ -329,13 +329,12 @@ new class extends Component {
                             Project Description
                         </label>
                         <textarea wire:model="description" id="description" rows="4"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-vertical"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-vertical"
                             placeholder="Describe your project, experience, or skills you want to match."></textarea>
                         @error('description')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
-
                     <!-- Generate Skills Button -->
                     <div class="group">
                         <button type="button" wire:click="generateSkillTags" wire:loading.attr="disabled"
@@ -376,140 +375,141 @@ new class extends Component {
                             </div>
                         </div>
                     @endif
-                </div>
-            </div>
 
-            <!-- FIXED Skills Selector -->
-            <div x-data="{
-                search: '',
-                selected: @entangle('selectedSkills'),
-                allSkills: @js($allSkills),
-                dropdownOpen: false,
-                get filteredSkills() {
-                    return this.allSkills.filter(skill =>
-                        this.search === '' || skill.name.toLowerCase().includes(this.search.toLowerCase())
-                    );
-                },
-                toggleDropdown() {
-                    this.dropdownOpen = !this.dropdownOpen;
-                    if (this.dropdownOpen) {
-                        this.$nextTick(() => {
-                            this.$refs.searchInput.focus();
-                        });
-                    }
-                },
-                selectSkill(skill) {
-                    if (!this.selected.includes(skill.id)) {
-                        this.selected.push(skill.id);
-                    }
-                    this.search = '';
-                },
-                removeSkill(skillId) {
-                    this.selected = this.selected.filter(id => id !== skillId);
-                },
-                getSkillName(skillId) {
-                    const skill = this.allSkills.find(s => s.id == skillId);
-                    return skill ? skill.name : '';
-                }
-            }" class="relative">
+                    <!-- FIXED Skills Selector -->
+                    <div x-data="{
+                        search: '',
+                        selected: @entangle('selectedSkills'),
+                        allSkills: @js($allSkills),
+                        dropdownOpen: false,
+                        get filteredSkills() {
+                            return this.allSkills.filter(skill =>
+                                this.search === '' || skill.name.toLowerCase().includes(this.search.toLowerCase())
+                            );
+                        },
+                        toggleDropdown() {
+                            this.dropdownOpen = !this.dropdownOpen;
+                            if (this.dropdownOpen) {
+                                this.$nextTick(() => {
+                                    this.$refs.searchInput.focus();
+                                });
+                            }
+                        },
+                        selectSkill(skill) {
+                            if (!this.selected.includes(skill.id)) {
+                                this.selected.push(skill.id);
+                            }
+                            this.search = '';
+                        },
+                        removeSkill(skillId) {
+                            this.selected = this.selected.filter(id => id !== skillId);
+                        },
+                        getSkillName(skillId) {
+                            const skill = this.allSkills.find(s => s.id == skillId);
+                            return skill ? skill.name : '';
+                        }
+                    }" class="relative">
 
-                <label class="block text-sm font-semibold text-gray-700 mb-3">
-                    Skills & Technologies
-                    <span class="text-gray-500 font-normal ml-1">(Select all that apply)</span>
-                </label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            Skills & Technologies
+                            <span class="text-gray-500 font-normal ml-1">(Select all that apply)</span>
+                        </label>
 
-                <!-- Searchable Dropdown -->
-                <div class="relative">
-                    <div class="relative">
-                        <input type="text" x-ref="searchInput" x-model="search" @click="dropdownOpen = true"
-                            @focus="dropdownOpen = true" placeholder="🔍 Search or browse skills..."
-                            class="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300" />
-                        <button type="button" @click="toggleDropdown()"
-                            class="absolute inset-y-0 right-0 flex items-center pr-3">
-                            <svg class="w-5 h-5 text-gray-400 transition-transform duration-200"
-                                :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Dropdown List -->
-                    <div x-show="dropdownOpen" x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 translate-y-1"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 translate-y-0"
-                        x-transition:leave-end="opacity-0 translate-y-1" @click.away="dropdownOpen = false"
-                        class="absolute top-full left-0 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50">
-
-                        <template x-for="skill in filteredSkills" :key="skill.id">
-                            <div @click="selectSkill(skill)"
-                                :class="selected.includes(skill.id) ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
-                                class="px-4 py-3 cursor-pointer transition-colors duration-200 flex items-center justify-between">
-                                <span x-text="skill.name" class="font-medium"></span>
-                                <div x-show="selected.includes(skill.id)" class="text-blue-500">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                            clip-rule="evenodd"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                        </template>
-
-                        <div x-show="filteredSkills.length === 0" class="px-4 py-6 text-center text-gray-500">
-                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                                </path>
-                            </svg>
-                            No skills found matching your search.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selected Skills Tags -->
-                <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                    class="mt-4">
-                    <div class="flex flex-wrap gap-2">
-                        <template x-for="skillId in selected" :key="skillId">
-                            <div
-                                class="group bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-full flex items-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                                <span x-text="getSkillName(skillId)" class="mr-2"></span>
-                                <button type="button" @click="removeSkill(skillId)"
-                                    class="ml-1 w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/50">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Searchable Dropdown -->
+                        <div class="relative">
+                            <div class="relative">
+                                <input type="text" x-ref="searchInput" x-model="search" @click="dropdownOpen = true"
+                                    @focus="dropdownOpen = true" placeholder="🔍 Search or browse skills..."
+                                    class="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300" />
+                                <button type="button" @click="toggleDropdown()"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <svg class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                                        :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12"></path>
+                                            d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </button>
                             </div>
-                        </template>
-                    </div>
-                    <div class="flex items-center justify-between mt-2">
-                        <p class="text-sm text-gray-500">
-                            <span x-text="selected.length"></span> skill(s) selected
-                        </p>
-                        <button type="button" @click="selected = []; $dispatch('clear-skills')"
-                            class="text-sm text-red-500 hover:text-red-700 transition-colors duration-200 font-medium flex items-center">
-                            Clear all
-                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                </path>
-                            </svg>
-                        </button>
+
+                            <!-- Dropdown List -->
+                            <div x-show="dropdownOpen" x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 translate-y-1" @click.away="dropdownOpen = false"
+                                class="absolute top-full left-0 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50">
+
+                                <template x-for="skill in filteredSkills" :key="skill.id">
+                                    <div @click="selectSkill(skill)"
+                                        :class="selected.includes(skill.id) ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
+                                        class="px-4 py-3 cursor-pointer transition-colors duration-200 flex items-center justify-between">
+                                        <span x-text="skill.name" class="font-medium"></span>
+                                        <div x-show="selected.includes(skill.id)" class="text-blue-500">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <div x-show="filteredSkills.length === 0" class="px-4 py-6 text-center text-gray-500">
+                                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                                        </path>
+                                    </svg>
+                                    No skills found matching your search.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Skills Tags -->
+                        <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                            class="mt-4">
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="skillId in selected" :key="skillId">
+                                    <div
+                                        class="group bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-full flex items-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                                        <span x-text="getSkillName(skillId)" class="mr-2"></span>
+                                        <button type="button" @click="removeSkill(skillId)"
+                                            class="ml-1 w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/50">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="flex items-center justify-between mt-2">
+                                <p class="text-sm text-gray-500">
+                                    <span x-text="selected.length"></span> skill(s) selected
+                                </p>
+                                <button type="button" @click="selected = []; $dispatch('clear-skills')"
+                                    class="text-sm text-red-500 hover:text-red-700 transition-colors duration-200 font-medium flex items-center">
+                                    Clear all
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Project Details Card -->
-            <div
-                class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl relative z-30">
                 <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,8 +622,7 @@ new class extends Component {
             </div>
 
             <!-- Media Upload Card -->
-            <div
-                class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow transition-all duration-300 hover:shadow-xl">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow transition-all duration-300 hover:shadow-xl relative z-30">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
