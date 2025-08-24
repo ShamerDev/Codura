@@ -18,7 +18,7 @@ new class extends Component {
 
             <!-- Logo / Name -->
             <div class="flex items-center space-x-3">
-                <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="h-10 w-10">
+                <img src="{{ asset('favicon/code.png') }}" alt="Logo" class="h-10 w-10">
                 <span class="text-xl font-bold text-gray-900 dark:text-white">
                     SEEK-AI
                 </span>
