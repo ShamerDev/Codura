@@ -315,7 +315,7 @@ new class extends Component {
 
         <form wire:submit.prevent="save" class="space-y-8">
             <!-- Basic Information Card -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow relative z-30">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 relative">
                 <div class="p-8 space-y-6">
                     <!-- Title -->
                     <div class="group">
@@ -376,7 +376,7 @@ new class extends Component {
                         </div>
                     @endif
 
-                    <!-- FIXED Skills Selector -->
+                    <!-- FIXED Skills Selector Dropdown -->
                     <div x-data="{
                         search: '',
                         selected: @entangle('selectedSkills'),
@@ -416,7 +416,7 @@ new class extends Component {
                         </label>
 
                         <!-- Searchable Dropdown -->
-                        <div class="relative">
+                        <div class="relative" style="z-index: 100">
                             <div class="relative">
                                 <input type="text" x-ref="searchInput" x-model="search" @click="dropdownOpen = true"
                                     @focus="dropdownOpen = true" placeholder="🔍 Search or browse skills..."
@@ -439,7 +439,8 @@ new class extends Component {
                                 x-transition:leave="transition ease-in duration-150"
                                 x-transition:leave-start="opacity-100 translate-y-0"
                                 x-transition:leave-end="opacity-0 translate-y-1" @click.away="dropdownOpen = false"
-                                class="absolute top-full left-0 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50">
+                                style="position: absolute; top: 100%; left: 0; width: 100%; z-index: 999;"
+                                class="mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
 
                                 <template x-for="skill in filteredSkills" :key="skill.id">
                                     <div @click="selectSkill(skill)"
@@ -509,7 +510,8 @@ new class extends Component {
             </div>
 
             <!-- Project Details Card -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl relative z-30">
+            <div
+                class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl relative">
                 <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,7 +533,7 @@ new class extends Component {
                                 const option = this.options.find(opt => opt.id == this.selected);
                                 return option ? option.name : 'Choose a category';
                             }
-                        }" class="relative">
+                        }" class="relative" style="z-index: 90">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Category</label>
                             <div class="relative">
                                 <button @click="dropdownOpen = !dropdownOpen" type="button"
@@ -553,7 +555,8 @@ new class extends Component {
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     @click.away="dropdownOpen = false"
-                                    class="absolute left-0 top-full mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-40">
+                                    style="position: absolute; top: 100%; left: 0; width: 100%; z-index: 999;"
+                                    class="mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
 
                                     <template x-for="option in options" :key="option.id">
                                         <div @click="selected = option.id; dropdownOpen = false"
@@ -575,7 +578,7 @@ new class extends Component {
                             dropdownOpen: false,
                             selected: @entangle('semester'),
                             options: ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8']
-                        }" class="relative">
+                        }" class="relative" style="z-index: 80">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Semester</label>
                             <div class="relative">
                                 <button @click="dropdownOpen = !dropdownOpen" type="button"
@@ -597,7 +600,8 @@ new class extends Component {
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     @click.away="dropdownOpen = false"
-                                    class="absolute left-0 top-full mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-30">
+                                    style="position: absolute; top: 100%; left: 0; width: 100%; z-index: 999;"
+                                    class="mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-60-y-auto">
 
                                     <template x-for="option in options" :key="option">
                                         <div @click="selected = option; dropdownOpen = false"
@@ -622,7 +626,8 @@ new class extends Component {
             </div>
 
             <!-- Media Upload Card -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow transition-all duration-300 hover:shadow-xl relative z-30">
+            <div
+                class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl relative">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
