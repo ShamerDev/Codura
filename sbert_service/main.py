@@ -74,7 +74,7 @@ async def generate_skills(request: SkillRequest):
                 error="SBERT model is not loaded"
             )
 
-        print(f"🔍 Processing description: {request.description[:100]}...")
+        print(f"🔍 Processing description: {request.description[:200]}...")
         print(f"📊 Comparing against {len(request.skills)} skills")
 
         # Encode description
@@ -92,7 +92,7 @@ async def generate_skills(request: SkillRequest):
         for i, skill in enumerate(request.skills):
             similarity_score = float(similarities[i])
             # Only include skills with similarity above threshold
-            if similarity_score > 0.15:
+            if similarity_score > 0.10:
                 results.append(SkillSuggestion(
                     id=skill.id,
                     name=skill.name,
@@ -102,8 +102,8 @@ async def generate_skills(request: SkillRequest):
         # Sort by similarity score (highest first)
         results.sort(key=lambda x: x.similarity, reverse=True)
 
-        # Return top 10 most similar skills
-        top_results = results[:10]
+        # Return top 20 most similar skills
+        top_results = results[:20]
 
         print(f"✨ Found {len(top_results)} relevant skills")
         for skill in top_results[:3]:  # Log top 3

@@ -537,7 +537,7 @@ new class extends Component {
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Category</label>
                             <div class="relative">
                                 <button @click="dropdownOpen = !dropdownOpen" type="button"
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-left">
+                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-left max-h-60 overflow-y-auto">
                                     <span x-text="getSelectedName()"></span>
                                     <svg class="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                                         :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
@@ -556,7 +556,7 @@ new class extends Component {
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     @click.away="dropdownOpen = false"
                                     style="position: absolute; top: 100%; left: 0; width: 100%; z-index: 999;"
-                                    class="mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                                    class="mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-30 overflow-y-auto">
 
                                     <template x-for="option in options" :key="option.id">
                                         <div @click="selected = option.id; dropdownOpen = false"
