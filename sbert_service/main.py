@@ -6,13 +6,13 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import uvicorn
+import re
 
 app = FastAPI(title="SBERT Skills Matcher", version="1.0.0")
 
-# Add CORS middleware to allow Laravel to call this service
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your Laravel domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,6 +20,53 @@ app.add_middleware(
 
 # Global model variable
 model = None
+
+# Synonym mappings for skills
+SKILL_SYNONYMS = {
+    "HTML": ["html5", "html 5", "hypertext markup language", "markup"],
+    "CSS": ["css3", "css 3", "stylesheets", "styling", "cascading style sheets"],
+    "JavaScript": ["js", "javascript", "ecmascript", "vanilla js", "vanilla javascript"],
+    "TypeScript": ["ts", "typescript"],
+    "React": ["reactjs", "react.js", "react js"],
+    "Vue.js": ["vue", "vuejs", "vue js"],
+    "Angular": ["angularjs", "angular.js"],
+    "Next.js": ["nextjs", "next js"],
+    "Nuxt.js": ["nuxtjs", "nuxt js"],
+    "Node.js": ["nodejs", "node js", "node"],
+    "Express.js": ["express", "expressjs"],
+    "Laravel": ["laravel php"],
+    "Django": ["django python"],
+    "Flask": ["flask python"],
+    "Spring Boot": ["spring", "spring framework"],
+    "ASP.NET Core": ["asp.net", "aspnet", "dotnet core", ".net core"],
+    "MySQL": ["my sql"],
+    "PostgreSQL": ["postgres", "psql"],
+    "MongoDB": ["mongo", "mongo db"],
+    "REST APIs": ["rest api", "restful", "rest", "api"],
+    "GraphQL": ["graph ql", "gql"],
+    "Docker": ["containerization", "containers"],
+    "Kubernetes": ["k8s", "container orchestration"],
+    "AWS": ["amazon web services", "amazon aws"],
+    "CI/CD": ["continuous integration", "continuous deployment", "cicd"],
+    "Git": ["version control", "source control"],
+    "Tailwind CSS": ["tailwind", "tailwindcss"],
+    "Bootstrap": ["bootstrap css"],
+    "Sass/SCSS": ["sass", "scss", "syntactically awesome stylesheets"],
+    "UI/UX Design": ["ui design", "ux design", "user interface", "user experience"],
+    "Responsive Design": ["responsive", "mobile-first", "mobile responsive"],
+    "Testing (Unit / Integration / E2E)": ["unit testing", "integration testing", "e2e testing", "end to end testing", "testing"],
+    "Agile Methodology": ["agile", "agile development"],
+    "Project Management": ["pm", "project manager"],
+    "Machine Learning": ["ml", "artificial intelligence", "ai"],
+    "Data Analysis": ["data analytics", "analytics"],
+    "Problem Solving": ["troubleshooting", "debugging"]
+}
+
+# Create reverse mapping for faster lookup
+SYNONYM_TO_SKILL = {}
+for skill, synonyms in SKILL_SYNONYMS.items():
+    for synonym in synonyms:
+        SYNONYM_TO_SKILL[synonym.lower()] = skill
 
 @app.on_event("startup")
 async def startup_event():
@@ -43,16 +90,71 @@ class SkillSuggestion(BaseModel):
     id: int
     name: str
     similarity: float
+    match_type: str = "semantic"  # "exact", "synonym", or "semantic"
 
 class SkillResponse(BaseModel):
     success: bool
     suggested_skills: List[SkillSuggestion]
     error: str = None
 
+def find_exact_matches(description: str, skills: List[Skill]) -> List[SkillSuggestion]:
+    """Find exact keyword matches in description"""
+    description_lower = description.lower()
+    exact_matches = []
+
+    for skill in skills:
+        skill_name_lower = skill.name.lower()
+
+        # Check direct skill name match
+        if skill_name_lower in description_lower:
+            exact_matches.append(SkillSuggestion(
+                id=skill.id,
+                name=skill.name,
+                similarity=1.0,
+                match_type="exact"
+            ))
+            continue
+
+        # Check synonym matches
+        if skill.name in SKILL_SYNONYMS:
+            for synonym in SKILL_SYNONYMS[skill.name]:
+                if synonym.lower() in description_lower:
+                    exact_matches.append(SkillSuggestion(
+                        id=skill.id,
+                        name=skill.name,
+                        similarity=0.95,
+                        match_type="synonym"
+                    ))
+                    break
+
+    return exact_matches
+
+def enhance_description(description: str) -> str:
+    """Enhance description by adding skill context"""
+    enhanced = description
+
+    # Add context for commonly missed skills
+    patterns = {
+        r'\bhtml\b': 'HTML markup language',
+        r'\bcss\b': 'CSS styling',
+        r'\bjs\b|\bjavascript\b': 'JavaScript programming',
+        r'\bapi\b': 'REST API development',
+        r'\bdatabase\b|\bdb\b': 'database management',
+        r'\bfrontend\b|\bfront-end\b': 'frontend development',
+        r'\bbackend\b|\bback-end\b': 'backend development',
+        r'\btesting\b|\btest\b': 'software testing',
+        r'\bdeployment\b|\bdeploy\b': 'deployment and DevOps'
+    }
+
+    for pattern, context in patterns.items():
+        if re.search(pattern, description, re.IGNORECASE):
+            enhanced += f" {context}"
+
+    return enhanced
+
 @app.post("/generate-skills", response_model=SkillResponse)
 async def generate_skills(request: SkillRequest):
     try:
-        # Validation
         if not request.description.strip():
             return SkillResponse(
                 success=False,
@@ -75,39 +177,47 @@ async def generate_skills(request: SkillRequest):
             )
 
         print(f"🔍 Processing description: {request.description[:200]}...")
-        print(f"📊 Comparing against {len(request.skills)} skills")
 
-        # Encode description
-        description_embedding = model.encode([request.description])
+        # Step 1: Find exact/synonym matches
+        exact_matches = find_exact_matches(request.description, request.skills)
+        exact_skill_ids = {match.id for match in exact_matches}
 
-        # Extract skill names and encode them
-        skill_names = [skill.name for skill in request.skills]
-        skill_embeddings = model.encode(skill_names)
+        print(f"🎯 Found {len(exact_matches)} exact/synonym matches")
 
-        # Calculate cosine similarities
-        similarities = cosine_similarity(description_embedding, skill_embeddings)[0]
+        # Step 2: Enhance description for better semantic matching
+        enhanced_description = enhance_description(request.description)
 
-        # Create results with similarity scores
-        results = []
-        for i, skill in enumerate(request.skills):
-            similarity_score = float(similarities[i])
-            # Only include skills with similarity above threshold
-            if similarity_score > 0.10:
-                results.append(SkillSuggestion(
-                    id=skill.id,
-                    name=skill.name,
-                    similarity=similarity_score
-                ))
+        # Step 3: Semantic matching for remaining skills
+        remaining_skills = [skill for skill in request.skills if skill.id not in exact_skill_ids]
+        semantic_matches = []
 
-        # Sort by similarity score (highest first)
-        results.sort(key=lambda x: x.similarity, reverse=True)
+        if remaining_skills:
+            description_embedding = model.encode([enhanced_description])
+            skill_names = [skill.name for skill in remaining_skills]
+            skill_embeddings = model.encode(skill_names)
 
-        # Return top 20 most similar skills
-        top_results = results[:20]
+            similarities = cosine_similarity(description_embedding, skill_embeddings)[0]
 
-        print(f"✨ Found {len(top_results)} relevant skills")
-        for skill in top_results[:3]:  # Log top 3
-            print(f"   - {skill.name}: {skill.similarity:.3f}")
+            for i, skill in enumerate(remaining_skills):
+                similarity_score = float(similarities[i])
+                if similarity_score > 0.40:  # Lower threshold since we handle exact matches separately
+                    semantic_matches.append(SkillSuggestion(
+                        id=skill.id,
+                        name=skill.name,
+                        similarity=similarity_score,
+                        match_type="semantic"
+                    ))
+
+        # Combine and sort results
+        all_matches = exact_matches + semantic_matches
+        all_matches.sort(key=lambda x: x.similarity, reverse=True)
+
+        # Return top 12 results
+        top_results = all_matches[:12]
+
+        print(f"✨ Total relevant skills found: {len(top_results)}")
+        for i, skill in enumerate(top_results[:5]):
+            print(f"   {i+1}. {skill.name}: {skill.similarity:.3f} ({skill.match_type})")
 
         return SkillResponse(
             success=True,
