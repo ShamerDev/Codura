@@ -32,7 +32,13 @@ Route::view('user/manageentries', 'user.manageentries')
     ->middleware(['auth'])
     ->name('user.manageentries');
 
+Route::view('portfolio/profile', 'portfolio.profile')
+    ->middleware(['auth'])
+    ->name('portfolio.profile');
+
 Route::view('portfolio/viewpublic', 'portfolio.viewpublic')
     ->name('portfolio.viewpublic');
+
+
 
 require __DIR__ . '/auth.php';

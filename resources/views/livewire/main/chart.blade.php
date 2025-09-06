@@ -55,7 +55,7 @@ new class extends Component {
 
     <div class="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-6 border border-gray-200">
         <div class="flex justify-center">
-            <div class="relative" style="width: 550px; height: 550px;" x-data x-init="new Chart($refs.canvas, {
+            <div class="relative" style="width: 570px; height: 570px;" x-data x-init="new Chart($refs.canvas, {
                 type: 'radar',
                 data: {
                     labels: Object.keys(@js($chartData)),
@@ -94,7 +94,7 @@ new class extends Component {
                                 color: '#6B7280',
                                 font: {
                                     family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                    size: 9
+                                    size: 8
                                 }
                             },
                             grid: {
@@ -107,7 +107,7 @@ new class extends Component {
                                 color: '#374151',
                                 font: {
                                     family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                    size: 9,
+                                    size: 8,
                                     weight: 'bold'
                                 },
                                 padding: 20
