@@ -3,6 +3,6 @@
         <livewire:user.entrydetails>
     </div>
 
-    <x-wui-dialog z-index="z-50" blur="md" align="center" />
+    <x-dialog z-index="z-50" blur="md" align="center" />
     <x-notifications position="top-end" />
 </x-app-layout>

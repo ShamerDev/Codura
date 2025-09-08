@@ -10,9 +10,11 @@ use App\Models\EntrySkillTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use WireUi\Traits\WireUiActions;
 
 new class extends Component {
     use WithFileUploads;
+    use WireUiActions;
 
     // Form fields
     public $title;
@@ -132,9 +134,10 @@ new class extends Component {
             }
 
             // Show success message
-            session()->flash('sbert-success', count($this->suggestedSkills) . ' relevant skills suggested and automatically applied!');
+            $this->notification()->success('Skills Generated', count($this->suggestedSkills) . ' relevant skills suggested and automatically applied!');
         } catch (\Exception $e) {
             $this->addError('generation', 'Connection error: ' . $e->getMessage());
+            $this->notification()->error('Connection Error', $e->getMessage());
         } finally {
             $this->isGenerating = false;
         }
@@ -193,11 +196,7 @@ new class extends Component {
         }
 
         // Flash success + reset form
-        $this->dispatch('notify', [
-            'type' => 'success',
-            'title' => 'Entry Created',
-            'message' => 'Your portfolio entry has been saved successfully.',
-        ]);
+        $this->notification()->success('Entry Created', 'Your portfolio entry has been saved successfully.');
 
         $this->reset(['title', 'description', 'category_id', 'semester', 'link', 'thumbnail', 'images', 'selectedSkills', 'suggestedSkills']);
     }
@@ -252,11 +251,7 @@ new class extends Component {
         }
 
         // Flash success
-        $this->dispatch('notify', [
-            'type' => 'success',
-            'title' => 'Entry Updated',
-            'message' => 'Your portfolio entry has been updated successfully.',
-        ]);
+        $this->notification()->success('Entry Updated', 'Your portfolio entry has been updated successfully.');
 
         // Reload data to reflect changes
         $this->loadEntryData();
@@ -278,11 +273,7 @@ new class extends Component {
         }
 
         // Optional: Show a message about auto-selection
-        $this->dispatch('notify', [
-            'type' => 'success',
-            'title' => 'Skills Auto-Selected',
-            'message' => count($suggestedSkills) . ' relevant skills have been automatically selected for you.',
-        ]);
+        $this->notification()->success('Skills Auto-Selected', count($suggestedSkills) . ' relevant skills have been automatically selected for you.');
     }
 
     // Add this method to the component class
