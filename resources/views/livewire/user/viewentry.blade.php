@@ -18,7 +18,7 @@ new class extends Component {
 
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
     <!-- Header -->
-    <div class="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
+    <div class="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 z-10">
         <div class="max-w-7xl mx-auto px-6 py-10">
             <div class="text-center">
                 <h1 class="text-4xl font-bold text-slate-900 mb-3">
