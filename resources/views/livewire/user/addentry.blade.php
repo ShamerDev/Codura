@@ -316,6 +316,12 @@ new class extends Component {
         <form wire:submit.prevent="save" class="space-y-8">
             <!-- Basic Information Card -->
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 relative">
+                <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
+                    <h2 class="text-xl font-semibold text-white flex items-center">
+                        <!-- Icon and text -->
+                        Basic Information
+                    </h2>
+                </div>
                 <div class="p-8 space-y-6">
                     <!-- Title -->
                     <div class="group">
@@ -444,7 +450,8 @@ new class extends Component {
 
                                 <template x-for="skill in filteredSkills" :key="skill.id">
                                     <div @click="selectSkill(skill)"
-                                        :class="selected.includes(skill.id) ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'"
+                                        :class="selected.includes(skill.id) ? 'bg-blue-50 text-blue-700' :
+                                            'hover:bg-gray-50'"
                                         class="px-4 py-3 cursor-pointer transition-colors duration-200 flex items-center justify-between">
                                         <span x-text="skill.name" class="font-medium"></span>
                                         <div x-show="selected.includes(skill.id)" class="text-blue-500">
@@ -743,7 +750,8 @@ new class extends Component {
                             @else
                                 Additional Images
                             @endif
-                            <span class="text-gray-500 font-normal ml-1">(Project screenshots, diagrams, etc.)</span>
+                            <span class="text-gray-500 font-normal ml-1">(Project screenshots, diagrams,
+                                etc.)</span>
                         </label>
 
                         <div
