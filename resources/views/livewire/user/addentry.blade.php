@@ -195,6 +195,8 @@ new class extends Component {
             ]);
         }
 
+
+
         // Flash success + reset form
         $this->notification()->success('Entry Created', 'Your portfolio entry has been saved successfully.');
 
@@ -292,6 +294,16 @@ new class extends Component {
         // Dispatch event to SBERT component to update its description
         $this->dispatch('update-description', $this->description);
     }
+
+    public function removeUploadedImage($index)
+    {
+        // Remove the image at the specified index
+        if (isset($this->images[$index])) {
+            unset($this->images[$index]);
+            $this->images = array_values($this->images); // Re-index array
+            $this->notification()->success('Image Removed', 'The image has been removed.');
+        }
+    }
 };
 ?>
 
@@ -309,8 +321,12 @@ new class extends Component {
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 relative">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
-                        <!-- Icon and text -->
-                        Basic Information
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                            </path>
+                        </svg>
+                        Project Details
                     </h2>
                 </div>
                 <div class="p-8 space-y-6">
@@ -469,8 +485,8 @@ new class extends Component {
 
                         <!-- Selected Skills Tags -->
                         <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                            class="mt-4">
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100" class="mt-4">
                             <div class="flex flex-wrap gap-2">
                                 <template x-for="skillId in selected" :key="skillId">
                                     <div
@@ -671,20 +687,32 @@ new class extends Component {
                         <div
                             class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors duration-300 bg-gray-50 hover:bg-purple-50">
                             <div class="space-y-4">
-                                <div
-                                    class="mx-auto w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                        </path>
-                                    </svg>
-                                </div>
+                                @if ($thumbnail)
+                                    <!-- Preview for new thumbnail -->
+                                    <div class="mx-auto">
+                                        <img src="{{ $thumbnail->temporaryUrl() }}" alt="Thumbnail preview"
+                                            class="h-32 mx-auto object-cover rounded-lg shadow-md">
+                                    </div>
+                                @else
+                                    <div
+                                        class="mx-auto w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                @endif
                                 <div>
                                     <label for="thumbnail" class="cursor-pointer">
                                         <span
                                             class="text-lg font-semibold text-gray-700 hover:text-purple-600 transition-colors duration-200">
-                                            Click to upload thumbnail
+                                            @if ($thumbnail)
+                                                Change thumbnail
+                                            @else
+                                                Click to upload thumbnail
+                                            @endif
                                         </span>
                                         <input id="thumbnail" type="file" wire:model="thumbnail" class="hidden"
                                             accept="image/*">
@@ -741,26 +769,50 @@ new class extends Component {
                             @else
                                 Additional Images
                             @endif
-                            <span class="text-gray-500 font-normal ml-1">(Project screenshots, diagrams,
-                                etc.)</span>
+                            <span class="text-gray-500 font-normal ml-1">(Project screenshots, diagrams, etc.)</span>
                         </label>
 
                         <div
                             class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors duration-300 bg-gray-50 hover:bg-purple-50">
                             <div class="space-y-4">
-                                <div
-                                    class="mx-auto w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                </div>
+                                @if ($images && count($images) > 0)
+                                    <!-- Preview grid for additional images -->
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                        @foreach ($images as $key => $image)
+                                            <div class="relative group">
+                                                <img src="{{ $image->temporaryUrl() }}" alt="Image preview"
+                                                    class="w-full h-24 object-cover rounded-lg shadow-md">
+                                                <button type="button"
+                                                    wire:click="removeUploadedImage({{ $key }})"
+                                                    class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors opacity-75 group-hover:opacity-100">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div
+                                        class="mx-auto w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                    </div>
+                                @endif
                                 <div>
                                     <label for="images" class="cursor-pointer">
                                         <span
                                             class="text-lg font-semibold text-gray-700 hover:text-purple-600 transition-colors duration-200">
-                                            Upload multiple images
+                                            @if ($images && count($images) > 0)
+                                                Add more images
+                                            @else
+                                                Upload multiple images
+                                            @endif
                                         </span>
                                         <input id="images" type="file" wire:model="images" multiple
                                             class="hidden" accept="image/*">
