@@ -5,12 +5,24 @@ use App\Models\Entry;
 
 new class extends Component {
     public $entries;
+    public $search = '';
 
     public function mount()
     {
         // Fetch only entries belonging to the authenticated user
         $this->entries = Entry::with('category', 'images', 'skills')
             ->where('student_id', auth()->id())
+            ->get();
+    }
+
+    public function updatedSearch()
+    {
+        // Filter entries based on search term
+        $this->entries = Entry::with('category', 'images', 'skills')
+            ->where('student_id', auth()->id())
+            ->where(function ($query) {
+                $query->where('title', 'like', '%' . $this->search . '%')->orWhere('description', 'like', '%' . $this->search . '%');
+            })
             ->get();
     }
 };
@@ -35,6 +47,22 @@ new class extends Component {
                         <span class="text-sm font-medium">{{ $entries->count() }} Projects</span>
                     </div>
                 @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="bg-white/60 backdrop-blur-sm border-b border-slate-200/30 py-4">
+        <div class="max-w-3xl mx-auto px-6">
+            <div class="relative">
+                <input wire:model.live="search" type="text" placeholder="Search projects by title or description..."
+                    class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring focus:ring-blue-500/20 transition-all outline-none">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
             </div>
         </div>
     </div>

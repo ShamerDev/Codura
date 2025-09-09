@@ -15,7 +15,7 @@ export default {
 
     presets: [
         require("./vendor/wireui/wireui/tailwind.config.js")
-    ],  
+    ],
 
     theme: {
         extend: {
@@ -26,4 +26,6 @@ export default {
     },
 
     plugins: [forms],
+
+    darkMode: 'class'
 };
