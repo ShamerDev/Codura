@@ -3,14 +3,18 @@
 use Livewire\Volt\Component;
 use App\Models\Entry;
 use App\Models\Portfolio;
+use App\Models\Profile; // Add this import
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage; // Add this import
 
 new class extends Component {
     public $entries = [];
     public $slug;
     public $portfolio;
+    public $profile; // Add profile property
     public $selectedEntry = null;
     public $showEntryModal = false;
+    public $showProfileModal = false; // Add profile modal state
     public $chartData = [];
 
     public function mount()
@@ -23,6 +27,9 @@ new class extends Component {
             $this->entries = [];
             return;
         }
+
+        // Load the student's profile
+        $this->profile = Profile::where('user_id', $this->portfolio->user_id)->first();
 
         // Load entries with relationships
         $this->entries = Entry::where('student_id', $this->portfolio->user_id)
@@ -52,7 +59,7 @@ new class extends Component {
             ->leftJoin('entry_skill_tags', 'skills.id', '=', 'entry_skill_tags.skill_id')
             ->leftJoin('entries', 'entry_skill_tags.entry_id', '=', 'entries.id')
             ->where('entries.student_id', $studentId)
-            ->where('entries.is_public', 1) // Only include public entries
+            ->where('entries.is_public', 1)
             ->select(
                 'skill_categories.name',
                 DB::raw("
@@ -84,9 +91,18 @@ new class extends Component {
     {
         $this->showEntryModal = false;
         $this->selectedEntry = null;
-
-        // Add this line to dispatch an event when modal closes
         $this->dispatch('modal-closed');
+    }
+
+    public function showProfile()
+    {
+        $this->showProfileModal = true;
+    }
+
+    public function closeProfileModal()
+    {
+        $this->showProfileModal = false;
+        $this->dispatch('profile-modal-closed');
     }
 };
 ?>
@@ -94,7 +110,7 @@ new class extends Component {
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Portfolio Header -->
-        <div class="text-center mb-12">
+        <div class="text-center mb-8">
             <div
                 class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span class="text-white font-bold text-2xl">
@@ -105,7 +121,19 @@ new class extends Component {
                 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
                 {{ $portfolio->user->name ?? 'Student' }}'s Portfolio
             </h1>
-            <p class="text-xl text-gray-600">Showcasing Skills & Creative Projects</p>
+            <p class="text-xl text-gray-600 mb-6">Showcasing Skills & Creative Projects</p>
+
+            <!-- Profile Info Button -->
+            <button wire:click="showProfile"
+                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group mb-6">
+                <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                View Profile Info
+            </button>
+
             <div class="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-6"></div>
         </div>
 
@@ -133,83 +161,89 @@ new class extends Component {
                                 <div class="relative w-full" style="height: 400px;" x-data="{
                                     chart: null,
                                     initChart() {
+                                        // Always destroy the existing chart if it exists
                                         if (this.chart) {
                                             this.chart.destroy();
                                         }
-                                        this.chart = new Chart($refs.canvas, {
-                                            type: 'radar',
-                                            data: {
-                                                labels: Object.keys(@js($chartData)),
-                                                datasets: [{
-                                                    label: 'Skill Progression',
-                                                    data: Object.values(@js($chartData)),
-                                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                                    borderColor: 'rgb(59, 130, 246)',
-                                                    borderWidth: 2,
-                                                    pointBackgroundColor: 'rgb(59, 130, 246)',
-                                                    pointBorderColor: '#fff',
-                                                    pointBorderWidth: 1,
-                                                    pointRadius: 3,
-                                                    pointHoverRadius: 5
-                                                }]
-                                            },
-                                            options: {
-                                                responsive: true,
-                                                maintainAspectRatio: false,
-                                                plugins: {
-                                                    legend: {
-                                                        labels: {
-                                                            color: '#374151',
-                                                            font: {
-                                                                family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                                                size: 8
+
+                                        // Create new chart
+                                        this.$nextTick(() => {
+                                            this.chart = new Chart($refs.canvas, {
+                                                type: 'radar',
+                                                data: {
+                                                    labels: Object.keys(@js($chartData)),
+                                                    datasets: [{
+                                                        label: 'Skill Progression',
+                                                        data: Object.values(@js($chartData)),
+                                                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                                        borderColor: 'rgb(59, 130, 246)',
+                                                        borderWidth: 2,
+                                                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                                                        pointBorderColor: '#fff',
+                                                        pointBorderWidth: 1,
+                                                        pointRadius: 3,
+                                                        pointHoverRadius: 5
+                                                    }]
+                                                },
+                                                options: {
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    plugins: {
+                                                        legend: {
+                                                            labels: {
+                                                                color: '#374151',
+                                                                font: {
+                                                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
+                                                                    size: 8
+                                                                }
                                                             }
                                                         }
-                                                    }
-                                                },
-                                                scales: {
-                                                    r: {
-                                                        suggestedMin: 0,
-                                                        suggestedMax: 1,
-                                                        ticks: {
-                                                            color: '#6B7280',
-                                                            font: {
-                                                                family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                                                size: 9
+                                                    },
+                                                    scales: {
+                                                        r: {
+                                                            suggestedMin: 0,
+                                                            suggestedMax: 1,
+                                                            ticks: {
+                                                                color: '#6B7280',
+                                                                font: {
+                                                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
+                                                                    size: 9
+                                                                },
+                                                                backdropPadding: 3,
+                                                                showLabelBackdrop: false
                                                             },
-                                                            backdropPadding: 3,
-                                                            showLabelBackdrop: false
-                                                        },
-                                                        grid: {
-                                                            color: 'rgba(107, 114, 128, 0.2)'
-                                                        },
-                                                        angleLines: {
-                                                            color: 'rgba(107, 114, 128, 0.2)'
-                                                        },
-                                                        pointLabels: {
-                                                            color: '#374151',
-                                                            font: {
-                                                                family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                                                size: 12,
-                                                                weight: 'bold'
+                                                            grid: {
+                                                                color: 'rgba(107, 114, 128, 0.2)'
                                                             },
-                                                            padding: 20,
-                                                            centerPointLabels: true,
-                                                            callback: function(value) {
-                                                                // Break long labels into multiple lines
-                                                                if (value.length > 10) {
-                                                                    return value.match(/.{1,10}/g);
+                                                            angleLines: {
+                                                                color: 'rgba(107, 114, 128, 0.2)'
+                                                            },
+                                                            pointLabels: {
+                                                                color: '#374151',
+                                                                font: {
+                                                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
+                                                                    size: 12,
+                                                                    weight: 'bold'
+                                                                },
+                                                                padding: 20,
+                                                                centerPointLabels: true,
+                                                                callback: function(value) {
+                                                                    // Break long labels into multiple lines
+                                                                    if (value.length > 10) {
+                                                                        return value.match(/.{1,10}/g);
+                                                                    }
+                                                                    return value;
                                                                 }
-                                                                return value;
                                                             }
                                                         }
                                                     }
                                                 }
-                                            }
+                                            });
                                         });
                                     }
                                 }"
-                                    x-init="initChart()" @modal-closed.window="setTimeout(() => initChart(), 300)">
+                                    x-init="initChart()" @modal-closed.window="initChart()"
+                                    @profile-modal-closed.window="initChart()">
                                     <canvas x-ref="canvas"></canvas>
                                 </div>
                             </div>
@@ -424,6 +458,223 @@ new class extends Component {
         </div>
     </div>
 
+    <!-- Profile Modal -->
+    @if ($showProfileModal)
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-700 px-8 py-6 relative">
+                    <div class="absolute inset-0 bg-black/10"></div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div
+                                class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mr-4 border border-white/20">
+                                <span class="text-white font-bold text-2xl">
+                                    {{ substr($portfolio->user->name ?? 'S', 0, 1) }}
+                                </span>
+                            </div>
+                            <div>
+                                <h3 class="text-3xl font-bold text-white">{{ $portfolio->user->name ?? 'Student' }}
+                                </h3>
+                                <p class="text-white/80 text-lg">Professional Profile</p>
+                            </div>
+                        </div>
+                        <button wire:click="closeProfileModal"
+                            class="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="overflow-y-auto max-h-[calc(90vh-120px)] p-8">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- Left Column -->
+                        <div class="space-y-6">
+                            <!-- Bio Section -->
+                            <div
+                                class="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border border-gray-200">
+                                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    Contact Information
+                                </h4>
+                                <p class="text-gray-700 leading-relaxed">
+                                    {{ $profile?->contact_info ?? 'No contact information provided.' }}
+                                </p>
+                            </div>
+                            <!-- Bio Section -->
+                            <div
+                                class="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border border-gray-200">
+                                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    Personal Bio
+                                </h4>
+                                <p class="text-gray-700 leading-relaxed">
+                                    {{ $profile?->bio ?? 'No bio information provided.' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-6">
+                            <!-- LinkedIn Section -->
+                            <div
+                                class="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border border-gray-200">
+                                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                                        </svg>
+                                    </div>
+                                    LinkedIn Profile
+                                </h4>
+                                @if ($profile?->linkedin)
+                                    <a href="{{ $profile->linkedin }}" target="_blank"
+                                        onclick="event.stopPropagation()"
+                                        class="group inline-flex items-center p-4 bg-white rounded-xl border border-blue-200 hover:border-blue-300 transition-all duration-200 hover:shadow-md w-full">
+                                        <div class="flex-shrink-0">
+                                            <div
+                                                class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-white" fill="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path
+                                                        d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                                            </div>
+                                        </div>
+                                        <div class="ml-3 flex-1">
+                                            <p class="font-semibold text-blue-800">View LinkedIn</p>
+                                            <p class="text-sm text-blue-600 truncate">{{ $profile->linkedin }}</p>
+                                        </div>
+                                        <svg class="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7h-4M17 7v4">
+                                            </path>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <p class="text-gray-600">No LinkedIn profile linked.</p>
+                                @endif
+                            </div>
+
+                            <!-- GitHub Section -->
+                            <div
+                                class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+                                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                                        </svg>
+                                    </div>
+                                    GitHub Profile
+                                </h4>
+                                @if ($profile?->github)
+                                    <a href="{{ $profile->github }}" target="_blank"
+                                        onclick="event.stopPropagation()"
+                                        class="group inline-flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md w-full">
+                                        <div class="flex-shrink-0">
+                                            <div
+                                                class="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-white" fill="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path
+                                                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3 flex-1">
+                                            <p class="font-semibold text-gray-800">View GitHub</p>
+                                            <p class="text-sm text-gray-600 truncate">{{ $profile->github }}</p>
+                                        </div>
+                                        <svg class="w-4 h-4 text-gray-500 group-hover:translate-x-1 transition-transform"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7h-4M17 7v4">
+                                            </path>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <p class="text-gray-600">No GitHub profile linked.</p>
+                                @endif
+                            </div>
+
+                            <!-- Resume Section -->
+                            <div
+                                class="bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl p-6 border border-gray-200">
+                                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    Resume
+                                </h4>
+                                @if ($profile?->resume)
+                                    <a href="{{ Storage::url($profile->resume) }}" target="_blank"
+                                        onclick="event.stopPropagation()"
+                                        class="group inline-flex items-center p-4 bg-white rounded-xl border border-purple-200 hover:border-purple-300 transition-all duration-200 hover:shadow-md w-full">
+                                        <div class="flex-shrink-0">
+                                            <div
+                                                class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3 flex-1">
+                                            <p class="font-semibold text-purple-800">Download Resume</p>
+                                            <p class="text-sm text-purple-600">PDF Document</p>
+                                        </div>
+                                        <svg class="w-4 h-4 text-purple-500 group-hover:translate-x-1 transition-transform"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7h-4M17 7v4">
+                                            </path>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <p class="text-gray-600">No resume uploaded.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Entry Details Modal -->
     @if ($showEntryModal && $selectedEntry)
         <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -453,7 +704,6 @@ new class extends Component {
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
                         </button>
                     </div>
                 </div>
