@@ -227,13 +227,6 @@ new class extends Component {
                                                                 },
                                                                 padding: 20,
                                                                 centerPointLabels: true,
-                                                                callback: function(value) {
-                                                                    // Break long labels into multiple lines
-                                                                    if (value.length > 10) {
-                                                                        return value.match(/.{1,10}/g);
-                                                                    }
-                                                                    return value;
-                                                                }
                                                             }
                                                         }
                                                     }
