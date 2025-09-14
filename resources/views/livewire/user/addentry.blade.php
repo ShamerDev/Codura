@@ -307,26 +307,26 @@ new class extends Component {
 };
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+<div class="min-h-screen py-8">
     <div class="max-w-4xl mx-auto px-6">
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <h1 class="text-3xl font-bold text-white mb-2">
                 {{ $isUpdateMode ? 'Update Portfolio Entry' : 'Add Portfolio Entry' }}
             </h1>
         </div>
 
         <form wire:submit.prevent="save" class="space-y-8">
             <!-- Basic Information Card -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 relative">
-                <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
+            <div class="bg-white rounded-2xl shadow-lg border border-purple-600 relative">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
                             </path>
                         </svg>
-                        Project Details
+                        Project Description
                     </h2>
                 </div>
                 <div class="p-8 space-y-6">
@@ -525,7 +525,7 @@ new class extends Component {
 
             <!-- Project Details Card -->
             <div
-                class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl relative">
+                class="rounded-2xl shadow-lg border bg-white border-purple-600 relative">
                 <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -641,7 +641,7 @@ new class extends Component {
 
             <!-- Media Upload Card -->
             <div
-                class="bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl relative">
+                class="bg-white rounded-2xl shadow-lg border border-purple-600 relative">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-8 py-6 rounded-t-2xl">
                     <h2 class="text-xl font-semibold text-white flex items-center">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
