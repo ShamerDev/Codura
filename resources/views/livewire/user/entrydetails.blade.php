@@ -29,11 +29,11 @@ new class extends Component {
 };
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-12">
+<div class="min-h-screen bg-gradient-to-br from-slate-700 via-purple-600 to-slate-700 py-12">
     <div class="max-w-5xl mx-auto px-6">
         <!-- Hero Header with Floating Card Design -->
         <div class="relative mb-12">
-            <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+            <div class="bg-white rounded-3xl shadow-2xl border-indigo-600 overflow-hidden">
                 <!-- Header Background -->
                 <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 px-8 py-12 relative">
                     <div class="absolute inset-0 bg-black opacity-10"></div>
@@ -101,7 +101,7 @@ new class extends Component {
             <div class="lg:col-span-2 space-y-8">
                 <!-- Thumbnail Section -->
                 @if ($entry->thumbnail_path)
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div class="bg-white rounded-2xl shadow-xl border border-indigo-600 overflow-hidden">
                         <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4">
                             <h2 class="text-xl font-bold text-white flex items-center">
                                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +122,7 @@ new class extends Component {
 
                 <!-- Additional Images Gallery -->
                 @if ($entry->images->isNotEmpty())
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div class="bg-white rounded-2xl shadow-xl border border-indigo-600 overflow-hidden">
                         <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
                             <h2 class="text-xl font-bold text-white flex items-center">
                                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +151,7 @@ new class extends Component {
             <div class="lg:col-span-1 space-y-6">
                 <!-- Skills Section -->
                 @if ($entry->skills->isNotEmpty())
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div class="bg-white rounded-2xl shadow-xl border border-indigo-600 overflow-hidden">
                         <div class="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4">
                             <h3 class="text-lg font-bold text-white flex items-center">
                                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +178,7 @@ new class extends Component {
 
                 <!-- External Link -->
                 @if ($entry->link)
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div class="bg-white rounded-2xl shadow-xl border border-indigo-600 overflow-hidden">
                         <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
                             <h3 class="text-lg font-bold text-white flex items-center">
                                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

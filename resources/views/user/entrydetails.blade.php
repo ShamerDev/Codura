@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="space-y-8">
+    <div class="space-y-8 bg-gradient-to-r from-indigo-600 to-purple-600">
         <livewire:user.entrydetails>
     </div>
 

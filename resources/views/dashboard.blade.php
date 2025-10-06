@@ -412,15 +412,14 @@
 
         <!-- Main Dashboard Content -->
         <div class="relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div
-                class="bg-white backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-xl">
+            <div class="bg-white backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-xl">
                 <div class="flex space-x-8 p-6">
                     <!-- Chart Component - Much Brighter -->
                     <div
-                        class="flex-1 bg-gradient-to-br from-blue-500/70 to-cyan-400/70 backdrop-blur-sm rounded-lg p-4 border border-blue-300/50 shadow-lg shadow-blue-500/20">
+                        class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 backdrop-blur-sm rounded-lg p-4 border border-blue-300/50 shadow-lg shadow-blue-500/20">
                         <div class="flex items-center space-x-2 mb-4">
-                            <div class="bg-blue-600 p-2 rounded-lg shadow-md">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                            <div class="bg-white p-2 rounded-lg shadow-md">
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
@@ -434,10 +433,10 @@
 
                     <!-- Info Box Component - Much Brighter -->
                     <div
-                        class="w-1/2 bg-gradient-to-br from-fuchsia-500/70 to-pink-400/70 backdrop-blur-sm rounded-lg p-4 border border-fuchsia-300/50 shadow-lg shadow-fuchsia-500/20">
+                        class="w-1/2 bg-gradient-to-r from-indigo-600 to-purple-600 backdrop-blur-sm rounded-lg p-4 border border-fuchsia-300/50 shadow-lg shadow-fuchsia-500/20">
                         <div class="flex items-center space-x-2 mb-4">
-                            <div class="bg-fuchsia-600 p-2 rounded-lg shadow-md">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                            <div class="bg-white p-2 rounded-lg shadow-md">
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -451,13 +450,13 @@
 
                 <!-- Recent Entries Section - Much Brighter -->
                 <div
-                    class="bg-gradient-to-br from-emerald-500/70 to-lime-400/70 backdrop-blur-sm rounded-lg p-4 m-6 border border-emerald-300/50 shadow-lg shadow-emerald-500/20">
+                    class="bg-gradient-to-r from-indigo-600 to-purple-600 backdrop-blur-sm rounded-lg p-4 m-6 border border-emerald-300/50 shadow-lg shadow-emerald-500/20">
                     <div class="flex items-center space-x-2 mb-4">
-                        <div class="bg-emerald-600 p-2 rounded-lg shadow-md">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                        <div class="bg-white p-2 rounded-lg shadow-md">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 10h11M9 21V3m0 0L3 10m6-7l6 7"></path>
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
                         <h3 class="text-lg font-bold text-white tracking-wide">Recent Entries</h3>
