@@ -32,10 +32,10 @@ new class extends Component {
     <div
         class="min-h-screen">
         <!-- Header -->
-        <div class="relative z-10 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-lg relative overflow-hidden">
+        <div class="z-10 bg-white rounded-full relative overflow-hidden">
             <div class="max-w-7xl mx-auto px-6 py-10">
                 <div class="text-center">
-                    <h1 class="text-4xl font-bold text-slate-900 mb-3">
+                    <h1 class="text-5xl font-bold text-slate-900 mb-3">
                         Software Engineering Portfolio
                     </h1>
                     <p class="text-slate-600 text-lg">Building the future, one project at a time</p>
@@ -59,7 +59,7 @@ new class extends Component {
                 <div class="relative">
                     <input wire:model.live="search" type="text"
                         placeholder="Search projects by title or description..."
-                        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring focus:ring-blue-500/20 transition-all outline-none">
+                        class="w-full pl-10 pr-4 py-2.5 rounded-full border border-slate-200 focus:border-blue-500 focus:ring focus:ring-blue-500/20 transition-all outline-none">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

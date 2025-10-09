@@ -175,14 +175,17 @@ new class extends Component {
                                                     datasets: [{
                                                         label: 'Skill Progression',
                                                         data: Object.values(@js($chartData)),
-                                                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                                        borderColor: 'rgb(59, 130, 246)',
-                                                        borderWidth: 2,
-                                                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                                                        backgroundColor: 'rgba(99, 102, 241, 0.3)',
+                                                        borderColor: 'rgb(99, 102, 241)',
+                                                        borderWidth: 3,
+                                                        pointBackgroundColor: 'rgb(99, 102, 241)',
                                                         pointBorderColor: '#fff',
-                                                        pointBorderWidth: 1,
-                                                        pointRadius: 3,
-                                                        pointHoverRadius: 5
+                                                        pointBorderWidth: 0,
+                                                        pointRadius: 6,
+                                                        pointHoverRadius: 10,
+                                                        pointHoverBackgroundColor: 'rgb(79, 70, 229)',
+                                                        pointHoverBorderColor: '#fff',
+                                                        pointHoverBorderWidth: 0
                                                     }]
                                                 },
                                                 options: {
