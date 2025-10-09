@@ -65,7 +65,7 @@ new class extends Component {
 };
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-6">
+<div class="min-h-screen py-10 px-6">
     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-8">
 
         <!-- PUBLIC LINK & QR CODE -->

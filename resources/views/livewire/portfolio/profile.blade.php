@@ -123,7 +123,7 @@ new class extends Component {
 };
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 p-6">
+<div class="min-h-screen p-6">
     <!-- Background Elements -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div class="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl"></div>
@@ -132,7 +132,7 @@ new class extends Component {
 
     <div class="relative z-10 max-w-4xl mx-auto">
         <!-- Header -->
-        <div class="text-center mb-12">
+        <div class="text-center mb-12 bg-white rounded-3xl p-6 border border-white/40 shadow-lg">
             <div class="inline-flex items-center px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-white/40 text-sm font-medium text-gray-600 mb-6">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>

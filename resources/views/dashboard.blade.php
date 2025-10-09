@@ -1,11 +1,4 @@
 <x-app-layout>
-    <x-slot name="header">
-        <!-- Header content stays the same -->
-        <div class="flex items-center space-x-3">
-            <!-- ...existing header code... -->
-        </div>
-    </x-slot>
-
     <div
         class="relative py-12 bg-gradient-to-br from-slate-700 via-purple-600 to-slate-700 min-h-screen overflow-hidden">
         <!-- Better distributed background elements -->
