@@ -25,7 +25,7 @@ new class extends Component {
 
         $allCategories = DB::table('skill_categories')->pluck('name')->toArray();
         foreach ($allCategories as $category) {
-            $this->percentages[$category] = isset($data[$category]) ? round($data[$category] * 200, 2) : 0;
+            $this->percentages[$category] = isset($data[$category]) ? round($data[$category] * 100, 2) : 0;
         }
     }
 };
@@ -70,7 +70,7 @@ new class extends Component {
         <div class="grid grid-cols-3 gap-6 text-center pt-4 border-t border-white/10">
             <div class="bg-white rounded-xl py-6 transition">
                 <h3 class="text-4xl font-bold text-indigo-400">{{ $avg }}%</h3>
-                <p class="text-xs uppercase tracking-wide text-indigo-800 mt-1">Average</p>
+                <p class="text-xs uppercase tracking-wide text-indigo-800 mt-1">Overall Skill Average</p>
             </div>
             <div class="bg-white rounded-xl py-6 transition">
                 <h3 class="text-lg font-bold text-green-400">{{ $maxCategory }}</h3>

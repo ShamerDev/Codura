@@ -43,8 +43,6 @@ new class extends Component {
 
 <div class="p-6">
     <div class="flex items-center space-x-3 mb-6">
-        <div class="bg-white p-2 rounded-lg">
-        </div>
         <h2 class="text-2xl font-bold text-white">Skill Development Radar</h2>
     </div>
     <div class="bg-white rounded-xl p-6 border border-white">
@@ -80,6 +78,15 @@ new class extends Component {
                                 font: {
                                     family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
                                     size: 9
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed.r !== undefined ? (context.parsed.r * 100).toFixed(1) : '0';
+                                    return `${label}: ${value}%`;
                                 }
                             }
                         }

@@ -34,11 +34,8 @@ new class extends Component {
 
 <div class="p-6">
     <div class="flex items-center space-x-3 mb-6">
-        <div class="bg-white p-2 rounded-lg">
-        </div>
         <h2 class="text-2xl font-bold text-white">Tech Stack Overview</h2>
     </div>
-
     <!-- Scrollable container -->
     <div class="h-[619px] overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
         @foreach ($categories as $index => $cat)

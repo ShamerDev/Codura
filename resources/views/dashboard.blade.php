@@ -165,6 +165,13 @@
                 style="top: 50%; left: 85%; animation-duration: 8.5s; animation-delay: 0.8s;"></div>
             <div class="particle bg-indigo-400 w-2 h-2 rounded-full absolute animate-float-particle"
                 style="top: 75%; left: 60%; animation-duration: 6.5s; animation-delay: 2.3s;"></div>
+
+            <!-- Add this inside your particle system section -->
+            @for ($i = 0; $i < 40; $i++)
+                <div class="particle bg-{{ ['cyan', 'blue', 'purple', 'green', 'yellow', 'red', 'indigo'][rand(0, 6)] }}-400 w-2 h-2 rounded-full absolute animate-float-particle"
+                    style="top: {{ rand(5, 95) }}%; left: {{ rand(5, 95) }}%; animation-duration: {{ rand(6, 10) }}s; animation-delay: {{ rand(0, 3) }}s;">
+                </div>
+            @endfor
         </div>
 
         <!-- Matrix Rain Effect Styles - Keep existing styles -->
