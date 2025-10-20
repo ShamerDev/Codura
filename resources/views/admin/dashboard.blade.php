@@ -413,22 +413,22 @@
         <!-- Main Dashboard Content -->
         <div class="relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white backdrop-blur-sm overflow-hidden shadow-2xl sm:rounded-xl">
-                <div class="flex space-x-8 p-6">
-                    <!-- Admin Section - Much Brighter -->
-                    <div
-                        class="bg-gradient-to-r from-indigo-600 to-purple-600 backdrop-blur-sm rounded-lg p-4 border border-fuchsia-300/50 shadow-lg shadow-fuchsia-500/20">
-                        <div class="flex items-center space-x-2 mb-4">
-                            <div class="bg-white p-2 rounded-lg shadow-md">
-                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-bold text-white tracking-wide">System Info</h3>
+                <!-- Admin Dashboard Section -->
+                <div
+                    class="bg-gradient-to-r from-indigo-600 to-purple-300 backdrop-blur-sm rounded-lg p-4 m-6 border border-emerald-300/50 shadow-lg shadow-emerald-500/20">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="bg-white p-2 rounded-lg shadow-md">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                         </div>
-                        <livewire:admin.dashboard />
+                        <h3 class="text-lg font-bold text-white tracking-wide">Your Entries</h3>
                     </div>
+                    <livewire:admin.dashboard />
                 </div>
             </div>
+        </div>
+    </div>
 </x-admin-layout>
