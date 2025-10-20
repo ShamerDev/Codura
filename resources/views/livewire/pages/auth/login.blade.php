@@ -19,7 +19,14 @@ new #[Layout('layouts.guest')] class extends Component {
 
         Session::regenerate();
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        // Check if the user is admin or regular user using Spatie Permission
+        if (auth()->user()->hasRole('admin')) {
+            // Redirect to the admin dashboard
+            $this->redirectIntended(default: route('admin.dashboard', absolute: false), navigate: true);
+        } else {
+            // Redirect to the user dashboard
+            $this->redirectIntended(default: route('user.dashboard', absolute: false), navigate: true);
+        }
     }
 }; ?>
 

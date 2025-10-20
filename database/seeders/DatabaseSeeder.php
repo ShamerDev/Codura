@@ -2,13 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\SavedAddress;
+use App\Models\SchedulePickup;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Database\Seeders\EntryCategorySeeder;
-use Database\Seeders\SkillCategorySeeder;
-use Database\Seeders\SkillSeeder;
-use Database\Seeders\SkillCategoryLinkSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,18 +15,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
         $this->call([
+            RoleSeeder::class,
             EntryCategorySeeder::class,
             SkillCategorySeeder::class,
-            SkillSeeder::class,
             SkillCategoryLinkSeeder::class,
+            SkillSeeder::class,
         ]);
+
     }
 }

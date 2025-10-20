@@ -2,43 +2,43 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::view('/', 'welcome')->name('welcome');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Role-based dashboard redirect
+Route::get('/dashboard', function () {
+    $user = auth()->user();
 
-Route::view('profile', 'profile')
-    ->middleware(['auth'])
-    ->name('profile');
+    // Use Spatie Permission package's hasRole method
+    if ($user->hasRole('admin')) {
+        return redirect()->route('admin.dashboard');
+    }
 
-Route::view('main/test', 'test')
-    ->middleware(['auth'])
-    ->name('test');
+    return redirect()->route('user.dashboard');
+})->middleware('auth')->name('dashboard');
 
-Route::view('user/addentry', 'user.addentry')
-    ->middleware(['auth'])
-    ->name('user.addentry');
+// Authenticated routes
+Route::middleware('auth')->group(function () {
 
-Route::view('user/viewentry', 'user.viewentry')
-    ->middleware(['auth'])
-    ->name('user.viewentry');
+    // Profile
+    Route::view('profile', 'profile')->name('profile');
 
-Route::view('user/entrydetails', 'user.entrydetails')
-    ->middleware(['auth'])
-    ->name('user.entrydetails');
+    // User-only routes
+    Route::middleware('role:user')->group(function () {
+        Route::view('user/dashboard', 'user.dashboard')->name('user.dashboard');
+        Route::view('user/addentry', 'user.addentry')->name('user.addentry');
+        Route::view('user/viewentry', 'user.viewentry')->name('user.viewentry');
+        Route::view('user/entrydetails', 'user.entrydetails')->name('user.entrydetails');
+        Route::view('user/manageentries', 'user.manageentries')->name('user.manageentries');
+        Route::view('portfolio/profile', 'portfolio.profile')->name('portfolio.profile');
+    });
 
-Route::view('user/manageentries', 'user.manageentries')
-    ->middleware(['auth'])
-    ->name('user.manageentries');
+    // Admin-only routes (future)
+    Route::middleware('role:admin')->group(function () {
+        Route::view('admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
+    });
+});
 
-Route::view('portfolio/profile', 'portfolio.profile')
-    ->middleware(['auth'])
-    ->name('portfolio.profile');
-
-Route::view('portfolio/viewpublic', 'portfolio.viewpublic')
-    ->name('portfolio.viewpublic');
-
-
+// Public route
+Route::view('portfolio/viewpublic', 'portfolio.viewpublic')->name('portfolio.viewpublic');
 
 require __DIR__ . '/auth.php';

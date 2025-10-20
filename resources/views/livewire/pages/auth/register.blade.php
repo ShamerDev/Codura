@@ -8,8 +8,7 @@ use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.guest')] class extends Component
-{
+new #[Layout('layouts.guest')] class extends Component {
     public string $name = '';
     public string $email = '';
     public string $password = '';
@@ -22,17 +21,21 @@ new #[Layout('layouts.guest')] class extends Component
     {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
 
-        event(new Registered($user = User::create($validated)));
+        event(new Registered(($user = User::create($validated))));
+
+        // Assign user role using Spatie Permission package
+        $user->assignRole('user');
 
         Auth::login($user);
 
-        $this->redirect(route('dashboard', absolute: false), navigate: true);
+        // Redirect to user dashboard instead of general dashboard
+        $this->redirect(route('user.dashboard', absolute: false), navigate: true);
     }
 }; ?>
 
@@ -81,8 +84,8 @@ new #[Layout('layouts.guest')] class extends Component
             <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
                 Password
             </label>
-            <input wire:model="password" id="password" name="password" type="password"
-                autocomplete="new-password" required
+            <input wire:model="password" id="password" name="password" type="password" autocomplete="new-password"
+                required
                 class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-sm"
                 placeholder="Create a password">
             @error('password')
@@ -111,7 +114,8 @@ new #[Layout('layouts.guest')] class extends Component
                 <span class="absolute left-0 inset-y-0 flex items-center pl-3">
                     <svg class="h-5 w-5 text-indigo-300 group-hover:text-indigo-200 transition-colors"
                         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/>
+                        <path
+                            d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
                     </svg>
                 </span>
                 Create Account
