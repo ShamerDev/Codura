@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SEEK-AI - Showcase Your Skills with Intelligence</title>
+    <title>Codura - Software Engineering Student Growth Tracking and E-Portfolio System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -72,7 +72,7 @@
                     <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
                         <span class="text-white font-mono font-bold text-sm">&lt;/&gt;</span>
                     </div>
-                    <span class="text-xl font-bold text-gray-900">SEEK-AI</span>
+                    <span class="text-xl font-bold text-gray-900">Codura</span>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="{{ route('login') }}"
@@ -111,7 +111,7 @@
                         </h1>
                         <p
                             class="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                            Transform your academic journey into a compelling portfolio. SEEK-AI uses advanced AI to
+                            Transform your academic journey into a compelling portfolio. Codura uses advanced AI to
                             automatically identify and categorize your skills.
                         </p>
                     </div>
@@ -135,60 +135,7 @@
                         @endauth
                     </div>
                 </div>
-                <div x-data="{ loaded: false }" x-init="$nextTick(() => setTimeout(() => loaded = true, 100))"
-                    :class="loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'"
-                    class="mx-auto flex items-center justify-center lg:justify-end transition-all duration-500 delay-300">
-                    <div
-                        class="relative aspect-square max-w-[450px] overflow-hidden rounded-3xl bg-gradient-to-b from-primary/10 to-primary/5 p-4 shadow-xl">
-                        <div class="grid h-full w-full grid-cols-2 grid-rows-2 gap-2">
-                            <div
-                                class="neo-morphism rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:translate-y-[-2px]">
-                                <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
-                                        </path>
-                                    </svg>
-                                </div>
-                                <h3 class="text-sm font-medium">AI-Powered Skills</h3>
-                            </div>
-                            <div
-                                class="neo-morphism rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:translate-y-[-2px]">
-                                <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                                        </path>
-                                    </svg>
-                                </div>
-                                <h3 class="text-sm font-medium">Radar Charts</h3>
-                            </div>
-                            <div
-                                class="neo-morphism rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:translate-y-[-2px]">
-                                <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                                        </path>
-                                    </svg>
-                                </div>
-                                <h3 class="text-sm font-medium">Project Showcase</h3>
-                            </div>
-                            <div
-                                class="neo-morphism rounded-2xl p-4 flex flex-col items-center text-center justify-center">
-                                <p class="text-xs text-muted-foreground">
-                                    "SEEK-AI helped me display my skills in a professional way!"
-                                </p>
-                                <p class="text-xs font-medium mt-1">- Satisfied Student</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-        </div>
     </section>
 
     {{-- Feature Section --}}
@@ -276,7 +223,7 @@
                     Simple Process
                 </div>
                 <h2 class="text-3xl font-bold tracking-tight md:text-4xl mb-4 font-display">
-                    How SEEK-AI Works
+                    How Codura Works
                 </h2>
                 <p class="text-muted-foreground md:text-xl">
                     Our intelligent portfolio creation system makes it easy to showcase your skills effectively.
@@ -292,8 +239,8 @@
                             </path>
                         </svg>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm neo-morphism min-h-40">
-                        <h3 class="text-xl font-bold mb-2">1. Upload Your Work</h3>
+                    <div class="bg-white dark:bg-indigo-300 rounded-xl p-6 shadow-sm neo-morphism min-h-40">
+                        <h3 class="text-xl font-bold mb-2">Upload Your Work</h3>
                         <p class="text-muted-foreground">
                             Upload your projects, assignments, and other academic work to create your portfolio.
                         </p>
@@ -308,8 +255,8 @@
                             </path>
                         </svg>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm neo-morphism min-h-40">
-                        <h3 class="text-xl font-bold mb-2">2. AI Analyzes Skills</h3>
+                    <div class="bg-white dark:bg-indigo-300 rounded-xl p-6 shadow-sm neo-morphism min-h-40">
+                        <h3 class="text-xl font-bold mb-2">AI Analyzes Skills</h3>
                         <p class="text-muted-foreground">
                             Our AI automatically extracts and categorizes your skills from the uploaded content.
                         </p>
@@ -324,8 +271,8 @@
                             </path>
                         </svg>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm neo-morphism min-h-40">
-                        <h3 class="text-xl font-bold mb-2">3. Share Your Portfolio</h3>
+                    <div class="bg-white dark:bg-indigo-300 rounded-xl p-6 shadow-sm neo-morphism min-h-40">
+                        <h3 class="text-xl font-bold mb-2">Share Your Portfolio</h3>
                         <p class="text-muted-foreground">
                             Get a beautiful, shareable portfolio that highlights your unique skill set and projects.
                         </p>
@@ -384,7 +331,7 @@
                         </a>
                     @else
                         <a href="{{ route('register') }}"
-                            class="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-8 font-medium text-sm text-white shadow transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary">
+                            class="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-8 font-medium text-sm text-black shadow transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary">
                             Start Building Your Portfolio
                         </a>
                         <a href="{{ route('login') }}"

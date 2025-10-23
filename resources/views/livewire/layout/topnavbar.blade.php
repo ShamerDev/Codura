@@ -27,12 +27,12 @@ new class extends Component {
             <div class="flex items-center space-x-3">
                 <div
                     class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg">
-                    <img src="{{ asset('favicon/code.png') }}" alt="SEEK-AI Logo"
+                    <img src="{{ asset('favicon/code.png') }}" alt="Codura Logo"
                         class="h-6 w-6 filter brightness-0 invert">
                 </div>
                 <span
                     class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    SEEK-AI
+                    Codura
                 </span>
             </div>
 

@@ -27,12 +27,12 @@ new class extends Component {
             <div class="flex items-center space-x-3">
                 <div
                     class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg">
-                    <img src="{{ asset('favicon/code.png') }}" alt="SEEK-AI Logo"
+                    <img src="{{ asset('favicon/code.png') }}" alt="Codura Logo"
                         class="h-6 w-6 filter brightness-0 invert">
                 </div>
                 <span
                     class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    SEEK-AI Admin
+                    Codura Admin
                 </span>
             </div>
 
@@ -43,25 +43,25 @@ new class extends Component {
                     Dashboard
                 </a>
 
-                <a href="#"
+                {{-- <a href="#"
                     class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     Manage Users
-                </a>
+                </a> --}}
 
-                <a href="#"
+                {{-- <a href="#"
                     class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 {{ request()->routeIs('admin.entries') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     All Entries
-                </a>
+                </a> --}}
 
-                <a href="#"
+                {{-- <a href="#"
                     class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 {{ request()->routeIs('admin.skills') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     Skill Tags
-                </a>
+                </a> --}}
 
-                <a href="#"
+                {{-- <a href="#"
                     class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 {{ request()->routeIs('admin.settings') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     Settings
-                </a>
+                </a> --}}
             </div>
 
             <!-- User / Logout -->
@@ -92,25 +92,25 @@ new class extends Component {
                     Dashboard
                 </a>
 
-                <a href="#"
+                {{-- <a href="#"
                     class="block px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg {{ request()->routeIs('admin.users') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     Manage Users
-                </a>
+                </a> --}}
 
-                <a href="#"
+                {{-- <a href="#"
                     class="block px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg {{ request()->routeIs('admin.entries') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     All Entries
-                </a>
+                </a> --}}
 
-                <a href="#"
+                {{-- <a href="#"
                     class="block px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg {{ request()->routeIs('admin.skills') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     Skill Tags
-                </a>
+                </a> --}}
 
-                <a href="#"
+                {{-- <a href="#"
                     class="block px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg {{ request()->routeIs('admin.settings') ? 'text-indigo-600 bg-indigo-50' : '' }}">
                     Settings
-                </a>
+                </a> --}}
             </div>
         @endif
     </div>
