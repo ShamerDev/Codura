@@ -10,12 +10,12 @@ new class extends Component {
     use WireUiActions;
 
     public $tab = 'categories';
-    public $activeCategory = null; // New property for active category in skills tab
+    public $activeCategory = null;
 
     // Skill state
     public $skills = [];
     public $newSkill = '';
-    public $newSkillCategories = []; // Changed to array for multi-select
+    public $newSkillCategories = [];
 
     // Category state
     public $categories = [];
@@ -24,7 +24,16 @@ new class extends Component {
     public $selectedSkills = [];
     public $links = [];
 
-    protected $listeners = ['refresh' => 'loadAll']; // Listen for refresh events
+    // Confirmation modals
+    public $showDeleteCategoryModal = false;
+    public $showDeleteSkillModal = false;
+    public $showUnlinkSkillModal = false;
+    public $categoryToDelete = null;
+    public $skillToDelete = null;
+    public $skillToUnlink = null;
+    public $categoryToUnlinkFrom = null;
+
+    protected $listeners = ['refresh' => 'loadAll'];
 
     public function mount()
     {
@@ -38,7 +47,6 @@ new class extends Component {
         $this->categories = SkillCategory::orderBy('name')->get();
         $this->links = SkillCategoryLink::with(['skill', 'category'])->get();
 
-        // Dispatch refresh event to update UI
         $this->dispatch('dataUpdated');
     }
 
@@ -65,7 +73,6 @@ new class extends Component {
 
         $skill = Skill::firstOrCreate(['name' => $this->newSkill]);
 
-        // Link to multiple categories
         foreach ($this->newSkillCategories as $categoryId) {
             SkillCategoryLink::firstOrCreate([
                 'skill_id' => $skill->id,
@@ -80,22 +87,42 @@ new class extends Component {
         $this->notification()->success('Success!', 'Skill added and linked to selected categories');
     }
 
-    public function deleteSkill($id)
+    public function confirmDeleteSkill($id)
     {
-        Skill::findOrFail($id)->delete();
-        $this->loadAll();
+        $this->skillToDelete = Skill::find($id);
+        $this->showDeleteSkillModal = true;
+    }
 
-        $this->notification()->success('Deleted', 'Skill removed successfully');
+    public function deleteSkill()
+    {
+        if ($this->skillToDelete) {
+            $this->skillToDelete->delete();
+            $this->loadAll();
+            $this->showDeleteSkillModal = false;
+            $this->skillToDelete = null;
+
+            $this->notification()->success('Deleted', 'Skill removed successfully');
+        }
     }
 
     // ---- Categories ----
-    public function deleteCategory($id)
+    public function confirmDeleteCategory($id)
     {
-        SkillCategory::findOrFail($id)->delete();
-        $this->loadAll();
-        $this->setDefaultActiveCategory(); // Reset active category if deleted
+        $this->categoryToDelete = SkillCategory::find($id);
+        $this->showDeleteCategoryModal = true;
+    }
 
-        $this->notification()->success('Deleted', 'Category removed');
+    public function deleteCategory()
+    {
+        if ($this->categoryToDelete) {
+            $this->categoryToDelete->delete();
+            $this->loadAll();
+            $this->setDefaultActiveCategory();
+            $this->showDeleteCategoryModal = false;
+            $this->categoryToDelete = null;
+
+            $this->notification()->success('Deleted', 'Category removed');
+        }
     }
 
     // ---- Bulk Linking ----
@@ -119,16 +146,28 @@ new class extends Component {
         $this->notification()->success('Success!', count($skillIds) . ' skill(s) linked to category');
     }
 
-    public function unlinkSkill($skillId, $categoryId)
+    public function confirmUnlinkSkill($skillId, $categoryId)
     {
-        SkillCategoryLink::where([
-            'skill_id' => $skillId,
-            'skill_category_id' => $categoryId,
-        ])->delete();
+        $this->skillToUnlink = Skill::find($skillId);
+        $this->categoryToUnlinkFrom = SkillCategory::find($categoryId);
+        $this->showUnlinkSkillModal = true;
+    }
 
-        $this->loadAll();
+    public function unlinkSkill()
+    {
+        if ($this->skillToUnlink && $this->categoryToUnlinkFrom) {
+            SkillCategoryLink::where([
+                'skill_id' => $this->skillToUnlink->id,
+                'skill_category_id' => $this->categoryToUnlinkFrom->id,
+            ])->delete();
 
-        $this->notification()->success('Unlinked', 'Skill removed from category');
+            $this->loadAll();
+            $this->showUnlinkSkillModal = false;
+            $this->skillToUnlink = null;
+            $this->categoryToUnlinkFrom = null;
+
+            $this->notification()->success('Unlinked', 'Skill removed from category');
+        }
     }
 
     public function getLinkedSkills($categoryId)
@@ -139,7 +178,6 @@ new class extends Component {
     public function getUnlinkedSkills($categoryId)
     {
         $linkedSkillIds = SkillCategoryLink::where('skill_category_id', $categoryId)->pluck('skill_id')->toArray();
-
         return Skill::whereNotIn('id', $linkedSkillIds)->orderBy('name')->get();
     }
 
@@ -159,14 +197,14 @@ new class extends Component {
         <!-- Tabs -->
         <div class="flex space-x-6 border-b border-gray-700 mb-8">
             <button @click="tab='categories'"
-                :class="tab === 'categories' ? 'border-b-2 border-indigo-400 text-indigo-400' :
-                    'text-gray-400 hover:text-gray-200'"
+                :class="tab === 'categories' ? 'border-b-2 border-white text-white' :
+                    'text-white hover:text-gray-200'"
                 class="pb-2 font-medium transition">
                 Categories
             </button>
             <button @click="tab='skills'"
-                :class="tab === 'skills' ? 'border-b-2 border-indigo-400 text-indigo-400' :
-                    'text-gray-400 hover:text-gray-200'"
+                :class="tab === 'skills' ? 'border-b-2 border-white text-white' :
+                    'text-white hover:text-gray-200'"
                 class="pb-2 font-medium transition">
                 Skills
             </button>
@@ -175,7 +213,7 @@ new class extends Component {
         <!-- Categories Tab -->
         <div x-show="tab==='categories'" x-cloak>
             <!-- Categories List -->
-            <div class="space-y-6">
+            <div class="space-y-6 text">
                 @forelse ($categories as $category)
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700"
                         wire:key="category-{{ $category->id }}">
@@ -191,9 +229,8 @@ new class extends Component {
                                     @endphp
                                     <p class="text-sm text-gray-400 mt-1">{{ $linkedCount }} skill(s) linked</p>
                                 </div>
-                                <x-button wire:click="deleteCategory({{ $category->id }})"
-                                    wire:confirm="Delete category '{{ $category->name }}'? This will remove all skill links."
-                                    negative label="Delete Category" xs />
+                                {{-- <x-button wire:click="confirmDeleteCategory({{ $category->id }})" negative
+                                    label="Delete Category" xs /> --}}
                             </div>
                         </div>
 
@@ -210,8 +247,7 @@ new class extends Component {
                                             wire:key="linked-{{ $link->skill->id }}-{{ $category->id }}">
                                             {{ $link->skill->name }}
                                             <button
-                                                wire:click="unlinkSkill({{ $link->skill->id }}, {{ $category->id }})"
-                                                wire:confirm="Unlink this skill?"
+                                                wire:click="confirmUnlinkSkill({{ $link->skill->id }}, {{ $category->id }})"
                                                 class="ml-1 hover:text-red-300 transition font-bold text-xs">
                                                 ✕
                                             </button>
@@ -368,9 +404,8 @@ new class extends Component {
                                                     </div>
                                                 </td>
                                                 <td class="px-6 py-4 text-right">
-                                                    <x-button wire:click="deleteSkill({{ $link->skill->id }})"
-                                                        wire:confirm="Delete '{{ $link->skill->name }}'?" negative
-                                                        label="Delete" xs />
+                                                    <x-button wire:click="confirmDeleteSkill({{ $link->skill->id }})"
+                                                        negative label="Delete" xs />
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -405,4 +440,120 @@ new class extends Component {
             @endif
         </div>
     </div>
+
+    <!-- Delete Category Confirmation Modal -->
+    @if ($showDeleteCategoryModal && $categoryToDelete)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-90"
+                x-transition:enter-end="opacity-100 scale-100">
+                <div class="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                        Confirm Category Deletion
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700 mb-6 leading-relaxed">
+                        Are you sure you want to delete the category "<span
+                            class="font-semibold text-red-600">{{ $categoryToDelete->name }}</span>"?
+                        This action cannot be undone and will remove all skill links associated with this category.
+                    </p>
+                    <div class="flex gap-3">
+                        <button wire:click="$set('showDeleteCategoryModal', false)"
+                            class="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200">
+                            Cancel
+                        </button>
+                        <button wire:click="deleteCategory"
+                            class="flex-1 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-rose-700 rounded-xl hover:from-red-700 hover:to-rose-800 transition-all duration-200 shadow-lg hover:shadow-xl">
+                            Delete Category
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Delete Skill Confirmation Modal -->
+    @if ($showDeleteSkillModal && $skillToDelete)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-90"
+                x-transition:enter-end="opacity-100 scale-100">
+                <div class="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                        Confirm Skill Deletion
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700 mb-6 leading-relaxed">
+                        Are you sure you want to delete the skill "<span
+                            class="font-semibold text-red-600">{{ $skillToDelete->name }}</span>"?
+                        This action cannot be undone and will remove this skill from all categories and portfolio
+                        entries.
+                    </p>
+                    <div class="flex gap-3">
+                        <button wire:click="$set('showDeleteSkillModal', false)"
+                            class="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200">
+                            Cancel
+                        </button>
+                        <button wire:click="deleteSkill"
+                            class="flex-1 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-rose-700 rounded-xl hover:from-red-700 hover:to-rose-800 transition-all duration-200 shadow-lg hover:shadow-xl">
+                            Delete Skill
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Unlink Skill Confirmation Modal -->
+    @if ($showUnlinkSkillModal && $skillToUnlink && $categoryToUnlinkFrom)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-90"
+                x-transition:enter-end="opacity-100 scale-100">
+                <div class="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1">
+                            </path>
+                        </svg>
+                        Confirm Skill Unlink
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700 mb-6 leading-relaxed">
+                        Are you sure you want to unlink "<span
+                            class="font-semibold text-orange-600">{{ $skillToUnlink->name }}</span>"
+                        from the "<span
+                            class="font-semibold text-orange-600">{{ $categoryToUnlinkFrom->name }}</span>" category?
+                        <br><br>
+                        This will only remove the link between the skill and category. The skill will remain available
+                        in other categories.
+                    </p>
+                    <div class="flex gap-3">
+                        <button wire:click="$set('showUnlinkSkillModal', false)"
+                            class="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200">
+                            Cancel
+                        </button>
+                        <button wire:click="unlinkSkill"
+                            class="flex-1 px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-orange-600 to-amber-700 rounded-xl hover:from-orange-700 hover:to-amber-800 transition-all duration-200 shadow-lg hover:shadow-xl">
+                            Unlink Skill
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
