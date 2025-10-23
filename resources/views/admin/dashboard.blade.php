@@ -424,7 +424,7 @@
                                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-lg font-bold text-white tracking-wide">Your Entries</h3>
+                        <h3 class="text-lg font-bold text-white tracking-wide">Skill Control</h3>
                     </div>
                     <livewire:admin.dashboard />
                 </div>
