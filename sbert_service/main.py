@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -83,7 +83,7 @@ class Skill(BaseModel):
     name: str
 
 class SkillRequest(BaseModel):
-    description: str
+    description: str = Field(..., max_length=2000, description="User description (max 2000 characters)")
     skills: List[Skill]
 
 class SkillSuggestion(BaseModel):
@@ -198,15 +198,42 @@ async def generate_skills(request: SkillRequest):
 
             similarities = cosine_similarity(description_embedding, skill_embeddings)[0]
 
+            # Debug: print every similarity so you can inspect why a skill was excluded
             for i, skill in enumerate(remaining_skills):
                 similarity_score = float(similarities[i])
-                if similarity_score > 0.40:  # Lower threshold since we handle exact matches separately
+                print(f"DEBUG similarity -> '{skill.name}': {similarity_score:.3f}")
+
+            # Primary semantic picks (keep your existing threshold)
+            for i, skill in enumerate(remaining_skills):
+                similarity_score = float(similarities[i])
+                if similarity_score > 0.40:
                     semantic_matches.append(SkillSuggestion(
                         id=skill.id,
                         name=skill.name,
                         similarity=similarity_score,
                         match_type="semantic"
                     ))
+
+            # Fallback: if too few semantic matches, add top candidates down to a min score
+            if len(semantic_matches) < 12:
+                min_fallback_score = 0.20
+                sorted_idx = sorted(range(len(similarities)), key=lambda k: similarities[k], reverse=True)
+                added_ids = {m.id for m in semantic_matches}
+                for idx in sorted_idx:
+                    if len(semantic_matches) >= 12:
+                        break
+                    if remaining_skills[idx].id in added_ids:
+                        continue
+                    score = float(similarities[idx])
+                    if score >= min_fallback_score:
+                        semantic_matches.append(SkillSuggestion(
+                            id=remaining_skills[idx].id,
+                            name=remaining_skills[idx].name,
+                            similarity=score,
+                            match_type="semantic"
+                        ))
+                    else:
+                        break
 
         # Combine and sort results
         all_matches = exact_matches + semantic_matches

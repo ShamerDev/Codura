@@ -5,6 +5,13 @@ use Illuminate\Support\Facades\DB;
 
 new class extends Component {
     public array $percentages = [];
+    public ?float $average = null;
+    public array $strongest = [];
+    public array $weakest = [];
+    public bool $hasEntries = false;
+    public float $maxValue = 0;
+    public float $minValue = 0;
+    public int $categoriesCount = 0;
 
     public function mount(): void
     {
@@ -24,8 +31,27 @@ new class extends Component {
             ->toArray();
 
         $allCategories = DB::table('skill_categories')->pluck('name')->toArray();
+        $this->categoriesCount = count($allCategories);
+
+        // Determine if user has any entries at all
+        $entryCount = DB::table('entries')->where('student_id', $studentId)->count();
+        $this->hasEntries = $entryCount > 0;
+
         foreach ($allCategories as $category) {
-            $this->percentages[$category] = isset($data[$category]) ? round($data[$category] * 100, 2) : 0;
+            // store as percentage 0-100
+            $this->percentages[$category] = isset($data[$category]) ? round($data[$category] * 100, 2) : 0.0;
+        }
+
+        if ($this->categoriesCount > 0) {
+            $this->maxValue = max($this->percentages);
+            $this->minValue = min($this->percentages);
+
+            // If there are no entries, keep average as null to indicate "No data"
+            $this->average = $this->hasEntries ? round(array_sum($this->percentages) / $this->categoriesCount, 2) : null;
+
+            // Find all categories that tie for strongest / weakest
+            $this->strongest = array_keys($this->percentages, $this->maxValue);
+            $this->weakest = array_keys($this->percentages, $this->minValue);
         }
     }
 };
@@ -61,24 +87,40 @@ new class extends Component {
         </div>
 
         <!-- Summary cards -->
-        @php
-            $avg = round(array_sum($percentages) / count($percentages), 2);
-            $maxCategory = array_keys($percentages, max($percentages))[0];
-            $minCategory = array_keys($percentages, min($percentages))[0];
-        @endphp
-
         <div class="grid grid-cols-3 gap-6 text-center pt-4 border-t border-white/10">
             <div class="bg-white rounded-xl py-6 transition">
-                <h3 class="text-4xl font-bold text-indigo-400">{{ $avg }}%</h3>
+                <h3 class="text-4xl font-bold text-indigo-400">
+                    {{ $average !== null ? $average . '%' : 'No data' }}
+                </h3>
                 <p class="text-xs uppercase tracking-wide text-indigo-800 mt-1">Overall Skill Average</p>
             </div>
+
             <div class="bg-white rounded-xl py-6 transition">
-                <h3 class="text-lg font-bold text-green-400">{{ $maxCategory }}</h3>
-                <p class="text-xs uppercase tracking-wide text-green-800 mt-1">Strongest Area</p>
+                @if (!$hasEntries)
+                    <h3 class="text-lg font-bold text-green-400">No data</h3>
+                    <p class="text-xs uppercase tracking-wide text-green-800 mt-1">Strongest Area</p>
+                @else
+                    <h3 class="text-lg font-bold text-green-400">
+                        {{ implode(', ', $strongest) }}
+                    </h3>
+                    <p class="text-xs uppercase tracking-wide text-green-800 mt-1">
+                        Strongest Area — {{ $maxValue }}%
+                    </p>
+                @endif
             </div>
+
             <div class="bg-white rounded-xl py-6 transition">
-                <h3 class="text-lg font-bold text-rose-400">{{ $minCategory }}</h3>
-                <p class="text-xs uppercase tracking-wide text-rose-800 mt-1">Needs Focus</p>
+                @if (!$hasEntries)
+                    <h3 class="text-lg font-bold text-rose-400">No data</h3>
+                    <p class="text-xs uppercase tracking-wide text-rose-800 mt-1">Needs Focus</p>
+                @else
+                    <h3 class="text-lg font-bold text-rose-400">
+                        {{ implode(', ', $weakest) }}
+                    </h3>
+                    <p class="text-xs uppercase tracking-wide text-rose-800 mt-1">
+                        Needs Focus — {{ $minValue }}%
+                    </p>
+                @endif
             </div>
         </div>
     </div>
