@@ -9,34 +9,66 @@ new class extends Component {
     public function mount(): void
     {
         $studentId = auth()->id();
-        $maxScore = 0.5;
-        $growthRate = 0.3;
 
-        $this->chartData = DB::table('skill_categories')
-            ->leftJoin('skill_category_links', 'skill_categories.id', '=', 'skill_category_links.skill_category_id')
-            ->leftJoin('skills', 'skill_category_links.skill_id', '=', 'skills.id')
-            ->leftJoin('entry_skill_tags', 'skills.id', '=', 'entry_skill_tags.skill_id')
-            ->leftJoin('entries', 'entry_skill_tags.entry_id', '=', 'entries.id')
-            ->where('entries.student_id', $studentId)
-            ->select(
-                'skill_categories.name',
-                DB::raw("
-                    COALESCE(
-                        {$maxScore} * (1 - EXP(-{$growthRate} * COUNT(DISTINCT entries.id))),
-                        0
-                    ) as normalized_score
-                "),
-            )
-            ->groupBy('skill_categories.name')
-            ->pluck('normalized_score', 'skill_categories.name')
-            ->toArray();
+        // ⚙️ Tunable constants (gentle, realistic progression)
+        $growthRate = 0.06;     // much slower category progression
+        $diversityWeight = 0.1; // subtle influence from unique skills
+        $maxScore = 1.0;        // theoretical cap (rarely reached)
 
-        $allCategories = DB::table('skill_categories')->pluck('name')->toArray();
-        foreach ($allCategories as $category) {
-            if (!isset($this->chartData[$category])) {
-                $this->chartData[$category] = 0;
+        $categories = DB::table('skill_categories')->pluck('name', 'id')->toArray();
+        $chartData = [];
+
+        foreach ($categories as $categoryId => $categoryName) {
+            // Get all skills within this category
+            $skills = DB::table('skills')
+                ->join('skill_category_links', 'skills.id', '=', 'skill_category_links.skill_id')
+                ->where('skill_category_links.skill_category_id', $categoryId)
+                ->pluck('skills.id');
+
+            if ($skills->isEmpty()) {
+                $chartData[$categoryName] = 0;
+                continue;
+            }
+
+            // Get all skills used by the student in entries
+            $skillData = DB::table('entry_skill_tags')
+                ->join('entries', 'entry_skill_tags.entry_id', '=', 'entries.id')
+                ->where('entries.student_id', $studentId)
+                ->whereIn('entry_skill_tags.skill_id', $skills)
+                ->select('entry_skill_tags.skill_id')
+                ->get();
+
+            if ($skillData->isEmpty()) {
+                $chartData[$categoryName] = 0;
+                continue;
+            }
+
+            // Count total and unique skill uses
+            $usageCounts = array_count_values($skillData->pluck('skill_id')->toArray());
+            $totalUses = array_sum($usageCounts);
+            $uniqueSkills = count($usageCounts);
+            $categorySize = count($skills);
+
+            // --- Slower, smoother exponential curve ---
+            // Gradual curve that rewards continued use
+            $growth = $maxScore * (1 - exp(-$growthRate * pow($totalUses, 0.85)));
+
+            // --- Mild diversity bonus ---
+            $diversityBonus = $diversityWeight * ($uniqueSkills / $categorySize);
+
+            $finalScore = min($growth + $diversityBonus, $maxScore);
+            $chartData[$categoryName] = round($finalScore, 4);
+        }
+
+        // Ensure unused categories appear
+        foreach ($categories as $name) {
+            if (!isset($chartData[$name])) {
+                $chartData[$name] = 0;
             }
         }
+
+        ksort($chartData);
+        $this->chartData = $chartData;
     }
 };
 ?>
@@ -45,81 +77,65 @@ new class extends Component {
     <div class="flex items-center space-x-3 mb-6">
         <h2 class="text-2xl font-bold text-white">Skill Development Radar</h2>
     </div>
+
     <div class="bg-white rounded-xl p-6 border border-white">
         <div class="flex justify-center">
-            <div class="relative" style="width: 570px; height: 570px;" x-data x-init="new Chart($refs.canvas, {
-                type: 'radar',
-                data: {
-                    labels: Object.keys(@js($chartData)),
-                    datasets: [{
-                        label: 'Skill Progression',
-                        data: Object.values(@js($chartData)),
-                        backgroundColor: 'rgba(99, 102, 241, 0.3)',
-                        borderColor: 'rgb(99, 102, 241)',
-                        borderWidth: 3,
-                        pointBackgroundColor: 'rgb(99, 102, 241)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 0,
-                        pointRadius: 6,
-                        pointHoverRadius: 10,
-                        pointHoverBackgroundColor: 'rgb(79, 70, 229)',
-                        pointHoverBorderColor: '#fff',
-                        pointHoverBorderWidth: 0
-                    }]
-
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#374151',
-                                font: {
-                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                    size: 9
-                                }
-                            }
+            <div class="relative" style="width: 570px; height: 570px;"
+                x-data
+                x-init="
+                    new Chart($refs.canvas, {
+                        type: 'radar',
+                        data: {
+                            labels: Object.keys(@js($chartData)),
+                            datasets: [{
+                                label: 'Skill Growth (Balanced)',
+                                data: Object.values(@js($chartData)),
+                                backgroundColor: 'rgba(99, 102, 241, 0.3)',
+                                borderColor: 'rgb(99, 102, 241)',
+                                borderWidth: 3,
+                                pointBackgroundColor: 'rgb(99, 102, 241)',
+                                pointBorderColor: '#fff',
+                                pointRadius: 6,
+                                pointHoverRadius: 10,
+                                pointHoverBackgroundColor: 'rgb(79, 70, 229)',
+                                pointHoverBorderColor: '#fff'
+                            }]
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed.r !== undefined ? (context.parsed.r * 100).toFixed(1) : '0';
-                                    return `${label}: ${value}%`;
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: '#374151', font: { size: 9 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed.r !== undefined
+                                                ? (context.parsed.r * 100).toFixed(1)
+                                                : '0';
+                                            return `${label}: ${value}%`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                r: {
+                                    suggestedMin: 0,
+                                    suggestedMax: 1,
+                                    ticks: {
+                                        color: '#6B7280',
+                                        font: { size: 8 }
+                                    },
+                                    grid: { color: 'rgba(107, 114, 128, 0.2)' },
+                                    pointLabels: {
+                                        color: '#374151',
+                                        font: { size: 10, weight: 'bold' }
+                                    }
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        r: {
-                            suggestedMin: 0,
-                            suggestedMax: 1,
-                            ticks: {
-                                color: '#6B7280',
-                                font: {
-                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                    size: 8
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(107, 114, 128, 0.2)'
-                            },
-                            angleLines: {
-                                color: 'rgba(107, 114, 128, 0.2)'
-                            },
-                            pointLabels: {
-                                color: '#374151',
-                                font: {
-                                    family: 'ui-monospace, SFMono-Regular, Consolas, monospace',
-                                    size: 10,
-                                    weight: 'bold'
-                                },
-                            }
-                        }
-                    }
-                }
-            })">
+                    });
+                ">
                 <canvas x-ref="canvas"></canvas>
             </div>
         </div>
