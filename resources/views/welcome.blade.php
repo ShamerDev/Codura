@@ -230,7 +230,7 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="bg-white">
+    <section id="features" class=" mb-12 bg-white">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-20">
                 <div class="inline-flex items-center space-x-2 bg-gray-50 rounded-full px-4 py-2 mb-6">
@@ -365,7 +365,7 @@
 
     <!-- CTA Section -->
     <section class="bg-white">
-        <div class="max-w-4xl mx-auto px-6 lg:px-8 text-center">
+        <div class="max-w-4xl mx-auto px-6 mt-32 lg:px-8 text-center">
             <div
                 class="inline-flex w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-3xl items-center justify-center mb-8 shadow-xl">
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

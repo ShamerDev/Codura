@@ -24,6 +24,10 @@ new class extends Component {
     public $selectedSkills = [];
     public $links = [];
 
+    // Unassigned state
+    public $unassignedSkills = [];
+    public $unassignedCount = 0;
+
     // Confirmation modals
     public $showDeleteCategoryModal = false;
     public $showDeleteSkillModal = false;
@@ -47,6 +51,11 @@ new class extends Component {
         $this->categories = SkillCategory::orderBy('name')->get();
         $this->links = SkillCategoryLink::with(['skill', 'category'])->get();
 
+        // load unassigned skills (no links)
+        $linkedIds = SkillCategoryLink::pluck('skill_id')->toArray();
+        $this->unassignedSkills = Skill::whereNotIn('id', $linkedIds)->orderBy('name')->get();
+        $this->unassignedCount = $this->unassignedSkills->count();
+
         $this->dispatch('dataUpdated');
     }
 
@@ -59,6 +68,7 @@ new class extends Component {
 
     public function setActiveCategory($categoryId)
     {
+        // accept numeric ids or special 'unassigned' key
         $this->activeCategory = $categoryId;
     }
 
@@ -161,12 +171,20 @@ new class extends Component {
                 'skill_category_id' => $this->categoryToUnlinkFrom->id,
             ])->delete();
 
+            // reload everything and switch to Skills -> Unassigned
             $this->loadAll();
             $this->showUnlinkSkillModal = false;
             $this->skillToUnlink = null;
             $this->categoryToUnlinkFrom = null;
 
-            $this->notification()->success('Unlinked', 'Skill removed from category');
+            // switch tab + active category to the "unassigned" view so admin can handle it
+            $this->tab = 'skills';
+            $this->activeCategory = 'unassigned';
+
+            // optional client-side focus
+            $this->dispatchBrowserEvent('open-unassigned');
+
+            $this->notification()->success('Unlinked', 'Skill removed from category and moved to Unassigned');
         }
     }
 
@@ -327,6 +345,18 @@ new class extends Component {
                     </div>
                     <div class="p-6">
                         <div class="flex flex-wrap gap-2">
+                            <!-- Unassigned nav -->
+                            <button wire:click="setActiveCategory('unassigned')"
+                                :class="activeCategory == 'unassigned' ?
+                                    'bg-indigo-600 text-white border-indigo-600' :
+                                    'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'"
+                                class="px-4 py-2 rounded-lg border transition-colors flex items-center gap-2"
+                                wire:key="nav-unassigned">
+                                <span>Unassigned</span>
+                                <span
+                                    class="text-xs bg-gray-900/50 px-2 py-1 rounded-full">{{ $unassignedCount }}</span>
+                            </button>
+
                             @foreach ($categories as $category)
                                 @php
                                     $categorySkillCount = SkillCategoryLink::where(
@@ -352,11 +382,69 @@ new class extends Component {
                 <!-- Active Category Skills -->
                 @if ($activeCategory)
                     @php
-                        $activeCategoryObj = $categories->find($activeCategory);
-                        $categorySkills = $this->getCategorySkills($activeCategory);
+                        $isUnassigned = $activeCategory === 'unassigned';
+                        $activeCategoryObj = $isUnassigned ? null : $categories->find($activeCategory);
+                        $categorySkills = $isUnassigned ? $unassignedSkills : $this->getCategorySkills($activeCategory);
                     @endphp
 
-                    @if ($activeCategoryObj && $categorySkills->count() > 0)
+                    @if ($isUnassigned)
+                        @if ($categorySkills->count() > 0)
+                            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
+                                wire:key="active-category-unassigned">
+                                <div class="px-6 py-4 border-b border-gray-700 bg-gray-900">
+                                    <h2 class="text-xl font-bold">Unassigned Skills</h2>
+                                    <p class="text-sm text-gray-400 mt-1">{{ $categorySkills->count() }} skill(s)</p>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full">
+                                        <thead class="bg-gray-900 border-b border-gray-700">
+                                            <tr>
+                                                <th
+                                                    class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                    Skill</th>
+                                                <th
+                                                    class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                    All Categories</th>
+                                                <th
+                                                    class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                    Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-700">
+                                            @foreach ($categorySkills as $skill)
+                                                <tr class="hover:bg-gray-750 transition"
+                                                    wire:key="unassigned-skill-{{ $skill->id }}">
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <span class="font-medium">{{ $skill->name }}</span>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <div class="text-sm text-gray-400">Not linked to any category
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-right">
+                                                        <x-button wire:click="confirmDeleteSkill({{ $skill->id }})"
+                                                            negative label="Delete" xs />
+                                                        <!-- Optionally add quick-assign UI here -->
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @else
+                            <div class="bg-gray-800 rounded-lg p-12 border border-gray-700 text-center">
+                                <svg class="w-12 h-12 mx-auto mb-4 text-gray-500" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2M7 7h10">
+                                    </path>
+                                </svg>
+                                <p class="text-gray-400 text-lg font-medium mb-2">No unassigned skills</p>
+                                <p class="text-gray-500 text-sm">Unlinked skills will appear here</p>
+                            </div>
+                        @endif
+                    @elseif ($activeCategoryObj && $categorySkills->count() > 0)
                         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
                             wire:key="active-category-{{ $activeCategory }}">
                             <div class="px-6 py-4 border-b border-gray-700 bg-gray-900">
@@ -418,7 +506,7 @@ new class extends Component {
                             <svg class="w-12 h-12 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2M7 7h10">
                                 </path>
                             </svg>
                             <p class="text-gray-400 text-lg font-medium mb-2">No skills in
