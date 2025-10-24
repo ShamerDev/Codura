@@ -18,10 +18,10 @@ new class extends Component {
         $studentId = auth()->id();
 
         // === MATCHES RADAR CONFIG ===
-        $growthRate = 0.06;     // same as radar
+        $growthRate = 0.06; // same as radar
         $diversityWeight = 0.1; // same as radar
-        $maxScore = 1.0;        // same as radar
-        $power = 0.85;          // same exponent used in radar
+        $maxScore = 1.0; // same as radar
+        $power = 0.85; // same exponent used in radar
 
         // Fetch categories
         $categories = DB::table('skill_categories')->pluck('name', 'id')->toArray();
@@ -36,11 +36,7 @@ new class extends Component {
 
         foreach ($categories as $categoryId => $categoryName) {
             // get skills for this category
-            $skills = DB::table('skills')
-                ->join('skill_category_links', 'skills.id', '=', 'skill_category_links.skill_id')
-                ->where('skill_category_links.skill_category_id', $categoryId)
-                ->pluck('skills.id')
-                ->toArray();
+            $skills = DB::table('skills')->join('skill_category_links', 'skills.id', '=', 'skill_category_links.skill_id')->where('skill_category_links.skill_category_id', $categoryId)->pluck('skills.id')->toArray();
 
             if (empty($skills)) {
                 $computed[$categoryName] = 0.0;
@@ -48,12 +44,7 @@ new class extends Component {
             }
 
             // get usage rows for this student limited to these skills
-            $skillRows = DB::table('entry_skill_tags')
-                ->join('entries', 'entry_skill_tags.entry_id', '=', 'entries.id')
-                ->where('entries.student_id', $studentId)
-                ->whereIn('entry_skill_tags.skill_id', $skills)
-                ->select('entry_skill_tags.skill_id')
-                ->get();
+            $skillRows = DB::table('entry_skill_tags')->join('entries', 'entry_skill_tags.entry_id', '=', 'entries.id')->where('entries.student_id', $studentId)->whereIn('entry_skill_tags.skill_id', $skills)->select('entry_skill_tags.skill_id')->get();
 
             if ($skillRows->isEmpty()) {
                 $computed[$categoryName] = 0.0;
@@ -70,12 +61,12 @@ new class extends Component {
             $growth = $maxScore * (1 - exp(-$growthRate * pow($totalUses ?: 0, $power)));
 
             // mild diversity bonus (same as radar)
-            $diversityBonus = $categorySize > 0 ? ($diversityWeight * ($uniqueSkills / $categorySize)) : 0;
+            $diversityBonus = $categorySize > 0 ? $diversityWeight * ($uniqueSkills / $categorySize) : 0;
 
             $finalScore = min($growth + $diversityBonus, $maxScore);
 
-            // store as percentage (0-100)
-            $computed[$categoryName] = round($finalScore * 100, 2);
+            // store as percentage (0-100) with 1 decimal to match radar
+            $computed[$categoryName] = round($finalScore * 100, 1);
         }
 
         // Ensure all categories exist (even unused)
@@ -94,9 +85,7 @@ new class extends Component {
             $this->maxValue = max($this->percentages);
             $this->minValue = min($this->percentages);
 
-            $this->average = $this->hasEntries
-                ? round(array_sum($this->percentages) / $this->categoriesCount, 2)
-                : null;
+            $this->average = $this->hasEntries ? round(array_sum($this->percentages) / $this->categoriesCount, 1) : null;
 
             $this->strongest = $this->maxValue > 0 ? array_keys($this->percentages, $this->maxValue) : [];
             $this->weakest = $this->minValue > 0 ? array_keys($this->percentages, $this->minValue) : [];
@@ -121,8 +110,7 @@ new class extends Component {
                         <span class="text-white text-xs font-semibold">{{ $value }}%</span>
                     </div>
                     <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                        <div
-                            class="h-2 rounded-full transition-all duration-700
+                        <div class="h-2 rounded-full transition-all duration-700
                                 @if ($value >= 70) bg-gradient-to-r from-green-400 to-emerald-500
                                 @elseif ($value >= 40) bg-gradient-to-r from-yellow-400 to-amber-500
                                 @else bg-gradient-to-r from-rose-400 to-red-500 @endif"
