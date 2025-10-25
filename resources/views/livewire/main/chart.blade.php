@@ -37,15 +37,19 @@ new class extends Component {
 
             // Count total and unique skill uses
             $usageCounts = array_count_values($skillData->pluck('skill_id')->toArray());
+            // Total uses across all skills in a category
             $totalUses = array_sum($usageCounts);
+            // Only once per skill, for bonus growth.
             $uniqueSkills = count($usageCounts);
+            // Total skills in a category
             $categorySize = count($skills);
 
             // --- Slower, smoother exponential curve ---
-            // Gradual curve that rewards continued use
+            // Gradual curve that rewards continued use (Repetition of skills used)
             $growth = $maxScore * (1 - exp(-$growthRate * pow($totalUses, 0.85)));
 
             // --- Mild diversity bonus ---
+            // Small bonus for using new skills in the category
             $diversityBonus = $diversityWeight * ($uniqueSkills / $categorySize);
 
             $finalScore = min($growth + $diversityBonus, $maxScore);
